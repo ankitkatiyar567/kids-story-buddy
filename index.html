@@ -330,6 +330,11 @@ function setPhase(p){
   $("#micBtn").classList.toggle("live", p==="listening");
 }
 
+/* Unlock TTS within a user gesture so it still speaks after a slow (model) delay.
+   Browsers gate the FIRST speechSynthesis call to a user activation; a silent
+   utterance fired on tap keeps audio warm for the rest of the session. */
+function primeTTS(){ if(window.speechSynthesis){ try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; window.speechSynthesis.speak(u); }catch(e){} } }
+
 /* INTERLOCK: speak -> on TTS end -> open mic. Mic never opens during speech. */
 function speak(text, after){
   stopListening();                       // ensure mic is closed before audio plays
@@ -483,6 +488,7 @@ async function bootstrapModel(){
 async function startAdventure(){
   // user-gesture audio unlock
   if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.getVoices(); }
+  primeTTS();                       // unlock audio NOW (within the gesture) so the model-generated opening still speaks
   state.useModel = $("#useModel").checked;
   state.modelId = isMobile() ? MOBILE_MODEL : $("#modelPick").value; window.ksbModelId = state.modelId;
   state.maxTurns = state.maxTurns || 5;
@@ -578,9 +584,9 @@ function checkGate(){ if(parseInt($("#gateInput").value,10)===gateA+gateB){ stat
 $("#startBtn").addEventListener("click", ()=>{ state.gatePassed ? startAdventure() : showGate(); });
 $("#gateBtn").addEventListener("click", checkGate);
 $("#gateInput").addEventListener("keydown", e=>{ if(e.key==="Enter") checkGate(); });
-$("#micBtn").addEventListener("click", ()=>{ startListening(); });   // tap-to-talk
-$("#sendBtn").addEventListener("click", ()=>{ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); });
-$("#txt").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); }});
+$("#micBtn").addEventListener("click", ()=>{ primeTTS(); startListening(); });   // tap-to-talk
+$("#sendBtn").addEventListener("click", ()=>{ primeTTS(); const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); });
+$("#txt").addEventListener("keydown", e=>{ if(e.key==="Enter"){ primeTTS(); const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); }});
 $("#restartBtn").addEventListener("click", ()=>{ if(window.speechSynthesis)window.speechSynthesis.cancel(); stopListening(); location.reload(); });
 if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(state.lang) pickVoice(); };
 </script>

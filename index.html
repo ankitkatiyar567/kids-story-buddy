@@ -81,6 +81,13 @@
     .restart{background:none;border:1px solid var(--bd);color:var(--muted);padding:9px 16px;border-radius:12px;cursor:pointer;font-size:.85rem;align-self:center}
     .banner{display:none;font-size:.8rem;background:rgba(255,184,107,.18);border:1px solid var(--warn);padding:10px 14px;border-radius:14px;text-align:center}
     footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.74rem}
+    .gate{display:none;position:fixed;inset:0;z-index:200;background:rgba(10,8,30,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);align-items:center;justify-content:center;padding:22px}
+    .gate-card{max-width:340px;width:100%;text-align:center;padding:28px 24px}
+    .gate-card h3{font-size:1.35rem;margin-bottom:8px}
+    .gate-card p{color:var(--muted);margin-bottom:16px;font-size:1.05rem}
+    .gate-card input{width:130px;text-align:center;font-size:1.5rem;padding:12px;border-radius:14px;border:1px solid var(--bd);background:rgba(0,0,0,.25);color:#fff;font-family:inherit}
+    .gate-wrong{color:#ff9a9a;font-size:.86rem;margin-top:10px;display:none}
+    .gate-btn{margin-top:16px;display:block;width:100%;padding:14px;border:none;border-radius:15px;font-weight:800;font-size:1.1rem;color:#3a1d6e;background:linear-gradient(110deg,var(--accent),var(--accent2));cursor:pointer}
   </style>
 </head>
 <body>
@@ -127,6 +134,7 @@
       </select>
       <button class="start" id="startBtn" disabled data-ui="start">▶ Start the Adventure!</button>
       <div class="note" data-ui="micNote">🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!</div>
+      <div class="note" data-ui="privacy" style="margin-top:8px">🔒 Stories run on your device; nothing is saved.</div>
     </section>
 
     <!-- STORY -->
@@ -149,6 +157,16 @@
       </div>
     </section>
 
+    <div class="gate" id="gate">
+      <div class="glass gate-card">
+        <h3 data-ui="gateTitle">Grown-up check 👋</h3>
+        <p id="gateQ"></p>
+        <input id="gateInput" type="number" inputmode="numeric" />
+        <div class="gate-wrong" id="gateWrong" data-ui="gateWrong">Not quite — try again.</div>
+        <button class="gate-btn" id="gateBtn" data-ui="gateBtn">Start</button>
+      </div>
+    </div>
+
     <footer>Prototype · teach-and-correct story loop · Web Speech API · open model (Llama&nbsp;3.2) in-browser via WebLLM/WebGPU, with a local fallback</footer>
   </div>
 
@@ -158,7 +176,7 @@
    ========================================================================= */
 const STR = {
   en:{ code:"en-US", name:"English",
-    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",pickLen:"3. Story length",lenShort:"Short",lenMed:"Medium",lenLong:"Long",pickGenre:"4. Story type",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:",useModel:"🧠 Use open AI model — runs in your browser, one-time download (size below) · needs WebGPU",modelLoading:"🧠 Waking up the story brain… ",modelReady:"🧠 Open AI model ready — stories are now AI-generated!",modelNoGpu:"🧠 No WebGPU here, so the built-in story engine is used (try Chrome/Edge desktop for the open model).",tapTalk:"👆 Tap the mic and talk",didntHear:"Hmm, I didn't catch that — tap the mic and try again, or type below.",hearing:"hearing…"},
+    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",pickLen:"3. Story length",lenShort:"Short",lenMed:"Medium",lenLong:"Long",pickGenre:"4. Story type",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:",useModel:"🧠 Use open AI model — runs in your browser, one-time download (size below) · needs WebGPU",modelLoading:"🧠 Waking up the story brain… ",modelReady:"🧠 Open AI model ready — stories are now AI-generated!",modelNoGpu:"🧠 The open AI model needs a desktop browser with WebGPU and enough memory — using the built-in story engine here (it works great!).",tapTalk:"👆 Tap the mic and talk",didntHear:"Hmm, I didn't catch that — tap the mic and try again, or type below.",hearing:"hearing…",privacy:"🔒 Stories run on your device; nothing is saved. Voice uses your browser's speech service (Chrome sends audio to Google to transcribe) — typing stays fully private.",gateTitle:"Grown-up check 👋",gatePrompt:"Ask a grown-up — what is {q}?",gateBtn:"Start",gateWrong:"Not quite — try again."},
     redirect:"Oh, that path is closed today! Let's head back toward our adventure. What should we do next?",
     reflectQ:"The End! What did you learn from this adventure?",
     validate:["Wow, that is a fantastic point!","What a wonderful idea — well done!","I love how you thought about that!"],
@@ -179,7 +197,7 @@ const STR = {
              "7-12":"With the final clue in hand, the Whispering Woods grows calm and the blue light settles into a friendly glow. The mystery is solved. 🌌 " }
   },
   hi:{ code:"hi-IN", name:"हिन्दी",
-    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",pickLen:"3. कहानी की लंबाई",lenShort:"छोटी",lenMed:"मध्यम",lenLong:"लंबी",pickGenre:"4. कहानी का प्रकार",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:",useModel:"🧠 ओपन एआई मॉडल इस्तेमाल करें — तुम्हारे ब्राउज़र में चलता है, एक बार डाउनलोड (आकार नीचे) · WebGPU ज़रूरी",modelLoading:"🧠 कहानी का दिमाग जाग रहा है… ",modelReady:"🧠 ओपन एआई मॉडल तैयार — अब कहानियाँ एआई से बन रही हैं!",modelNoGpu:"🧠 यहाँ WebGPU नहीं है, इसलिए अंदरूनी कहानी इंजन इस्तेमाल हो रहा है (ओपन मॉडल के लिए Chrome/Edge डेस्कटॉप आज़माएँ)।",tapTalk:"👆 माइक दबाओ और बोलो",didntHear:"हम्म, मैं समझ नहीं पाया — माइक दबाकर फिर बोलो, या नीचे लिखो।",hearing:"सुन रहा हूँ…"},
+    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",pickLen:"3. कहानी की लंबाई",lenShort:"छोटी",lenMed:"मध्यम",lenLong:"लंबी",pickGenre:"4. कहानी का प्रकार",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:",useModel:"🧠 ओपन एआई मॉडल इस्तेमाल करें — तुम्हारे ब्राउज़र में चलता है, एक बार डाउनलोड (आकार नीचे) · WebGPU ज़रूरी",modelLoading:"🧠 कहानी का दिमाग जाग रहा है… ",modelReady:"🧠 ओपन एआई मॉडल तैयार — अब कहानियाँ एआई से बन रही हैं!",modelNoGpu:"🧠 ओपन एआई मॉडल के लिए पर्याप्त मेमोरी और WebGPU वाला डेस्कटॉप ब्राउज़र चाहिए — यहाँ अंदरूनी कहानी इंजन इस्तेमाल हो रहा है (यह बढ़िया काम करता है!)।",tapTalk:"👆 माइक दबाओ और बोलो",didntHear:"हम्म, मैं समझ नहीं पाया — माइक दबाकर फिर बोलो, या नीचे लिखो।",hearing:"सुन रहा हूँ…",privacy:"🔒 कहानियाँ तुम्हारे डिवाइस पर बनती हैं; कुछ भी सेव नहीं होता। आवाज़ के लिए ब्राउज़र की स्पीच सेवा इस्तेमाल होती है (Chrome आवाज़ Google को भेजता है) — लिखना पूरी तरह निजी रहता है।",gateTitle:"बड़ों की जाँच 👋",gatePrompt:"किसी बड़े से पूछो — {q} कितना होता है?",gateBtn:"शुरू करो",gateWrong:"सही नहीं — फिर कोशिश करो।"},
     redirect:"अरे! हम उस रास्ते पर नहीं जा सकते। चलो वापस अपनी कहानी पर चलते हैं। अब आगे क्या करें?",
     reflectQ:"कहानी समाप्त! इस कहानी से आपने क्या सीखा?",
     validate:["वाह, यह तो बहुत बढ़िया बात है!","कितना सुंदर विचार — शाबाश!","मुझे तुम्हारी सोच बहुत पसंद आई!"],
@@ -200,7 +218,7 @@ const STR = {
              "7-12":"आखिरी सुराग हाथ में लेकर, फुसफुसाता जंगल शांत हो जाता है और नीली रोशनी एक दोस्ताना चमक में बदल जाती है। रहस्य सुलझ गया। 🌌 " }
   },
   fi:{ code:"fi-FI", name:"Suomi",
-    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",pickLen:"3. Tarinan pituus",lenShort:"Lyhyt",lenMed:"Keskipitkä",lenLong:"Pitkä",pickGenre:"4. Tarinan tyyppi",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:",useModel:"🧠 Käytä avointa tekoälymallia — toimii selaimessasi, kertalataus (koko alla) · vaatii WebGPU:n",modelLoading:"🧠 Herätellään tarina-aivoja… ",modelReady:"🧠 Avoin tekoälymalli valmis — tarinat luodaan nyt tekoälyllä!",modelNoGpu:"🧠 Ei WebGPU:ta täällä, joten käytetään sisäänrakennettua tarinamoottoria (kokeile Chrome/Edge-työpöytää avoimeen malliin).",tapTalk:"👆 Napauta mikkiä ja puhu",didntHear:"Hmm, en saanut selvää — napauta mikkiä ja yritä uudelleen, tai kirjoita alle.",hearing:"kuulen…"},
+    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",pickLen:"3. Tarinan pituus",lenShort:"Lyhyt",lenMed:"Keskipitkä",lenLong:"Pitkä",pickGenre:"4. Tarinan tyyppi",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:",useModel:"🧠 Käytä avointa tekoälymallia — toimii selaimessasi, kertalataus (koko alla) · vaatii WebGPU:n",modelLoading:"🧠 Herätellään tarina-aivoja… ",modelReady:"🧠 Avoin tekoälymalli valmis — tarinat luodaan nyt tekoälyllä!",modelNoGpu:"🧠 Avoin tekoälymalli vaatii työpöytäselaimen, jossa on WebGPU ja riittävästi muistia — täällä käytetään sisäänrakennettua tarinamoottoria (se toimii hienosti!).",tapTalk:"👆 Napauta mikkiä ja puhu",didntHear:"Hmm, en saanut selvää — napauta mikkiä ja yritä uudelleen, tai kirjoita alle.",hearing:"kuulen…",privacy:"🔒 Tarinat luodaan laitteellasi; mitään ei tallenneta. Puhe käyttää selaimen puhepalvelua (Chrome lähettää äänen Googlelle) — kirjoittaminen pysyy täysin yksityisenä.",gateTitle:"Aikuisen tarkistus 👋",gatePrompt:"Kysy aikuiselta — paljonko on {q}?",gateBtn:"Aloita",gateWrong:"Ei aivan — yritä uudelleen."},
     redirect:"Hups, se polku onkin suljettu! Palataanpa takaisin seikkailuun. Mitä tehdään seuraavaksi?",
     reflectQ:"Sen pituinen se! Mitä opit tästä seikkailusta?",
     validate:["Vau, sepä oli mahtava oivallus!","Mikä ihana idea — hienoa työtä!","Pidän kovasti siitä, miten ajattelit tuon!"],
@@ -230,7 +248,7 @@ const BANNED = {
 };
 
 /* ============================ STATE ============================ */
-const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false, modelId:null, seed:null };
+const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false, modelId:null, seed:null, gatePassed:false };
 
 /* Random story seeds — make every adventure different (fed to the model; it writes in the locked language) */
 const SEED = {
@@ -280,6 +298,10 @@ $("#lenOpts").addEventListener("click",e=>{ const o=e.target.closest(".opt"); if
   state.maxTurns=parseInt(o.dataset.len,10); });
 renderGenres("en");
 (function(){ const md=document.querySelector('#lenOpts [data-len="5"]'); if(md){ md.classList.add("sel"); state.maxTurns=5; } })();
+// On phones, hide the desktop model picker — we use a very light model there automatically.
+(function(){ if(/Android|iPhone|iPad|iPod|Mobile|Mobi|Silk|Kindle/i.test(navigator.userAgent||"")){
+  const mp=document.querySelector('#modelPick'); if(mp) mp.style.display="none";
+} })();
 
 /* ============================ VOICE I/O ============================ */
 function pickVoice(){
@@ -431,30 +453,38 @@ function renderTurns(){
   for(let i=0;i<state.maxTurns;i++){ const p=document.createElement("div"); p.className="pip"+(i<state.turn?" on":""); tb.appendChild(p); }
 }
 
+function isMobile(){ return /Android|iPhone|iPad|iPod|Mobile|Mobi|Silk|Kindle/i.test(navigator.userAgent||""); }
+const MOBILE_MODEL = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";       // very light model for phones (~0.35 GB)
+const SMALLER = {                                              // auto-downshift if a model won't fit
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC":"Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-1.5B-Instruct-q4f16_1-MLC":"Llama-3.2-1B-Instruct-q4f16_1-MLC",
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC":"Qwen2.5-0.5B-Instruct-q4f16_1-MLC"
+};
+function canRunModel(){
+  if(!window.ksbHasWebGPU || typeof window.ksbLoadModel!=="function") return false;   // no WebGPU → local engine
+  if(navigator.deviceMemory && navigator.deviceMemory < 3) return false;               // very low RAM → local engine
+  return true;                                                                          // mobile allowed (uses the light model)
+}
+
 async function bootstrapModel(){
   if(!state.useModel) return;
   const b=$("#fallbackBanner"); b.style.display="block";
-  if(!window.ksbHasWebGPU || typeof window.ksbLoadModel!=="function"){ b.textContent=T().ui.modelNoGpu; return; }
+  if(!canRunModel()){ b.textContent=T().ui.modelNoGpu; return; }   // never even download on unsupported devices
   const prog = p=>{ const pct=Math.round(((p&&p.progress!=null)?p.progress:0)*100); b.textContent=T().ui.modelLoading+pct+"%"; };
   const ok = ()=>{ state.modelReady=true; b.textContent=T().ui.modelReady; setTimeout(()=>{ b.style.display="none"; },5000); };
-  b.textContent=T().ui.modelLoading+"0%";
-  try{ await window.ksbLoadModel(prog); ok(); }
-  catch(e){
-    console.warn("model load failed",e);
-    if((window.ksbModelId||"").indexOf("1B")<0){           // too heavy for this device → retry the Fast model once
-      b.textContent="🧠 That model was too big for this device — loading the Fast model instead…";
-      window.ksbModelId="Llama-3.2-1B-Instruct-q4f16_1-MLC";
-      try{ await window.ksbLoadModel(prog); ok(); }
-      catch(e2){ console.warn(e2); b.textContent="🧠 Couldn't load the AI model on this device — using the built-in story engine. Try Chrome/Edge on desktop."; }
-    } else { b.textContent="🧠 Couldn't load the AI model on this device — using the built-in story engine. Try Chrome/Edge on desktop."; }
+  let mid = window.ksbModelId;
+  while(mid){                                               // try, and auto-downshift to a lighter model on failure
+    try{ window.ksbModelId=mid; b.textContent=T().ui.modelLoading+"0%"; await window.ksbLoadModel(prog); ok(); return; }
+    catch(e){ console.warn("model load failed:",mid,e); mid = SMALLER[mid]; if(mid) b.textContent="🧠 Trying a lighter model…"; }
   }
+  b.textContent="🧠 Couldn't load the AI model on this device — using the built-in story engine (it works great!).";
 }
 
 async function startAdventure(){
   // user-gesture audio unlock
   if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.getVoices(); }
   state.useModel = $("#useModel").checked;
-  state.modelId = $("#modelPick").value; window.ksbModelId = state.modelId;
+  state.modelId = isMobile() ? MOBILE_MODEL : $("#modelPick").value; window.ksbModelId = state.modelId;
   state.maxTurns = state.maxTurns || 5;
   state.genre = $("#genreSel").value;
   const g = GENRES.find(x=>x.v===state.genre);
@@ -539,7 +569,15 @@ let lat0=null;
 function logLatency(tStart){ if(tStart){ const ms=Math.round(performance.now()-tStart); console.log("round-trip latency: "+ms+"ms (target <2000ms)"); } }
 
 /* ============================ EVENTS ============================ */
-$("#startBtn").addEventListener("click", startAdventure);
+let gateA=0, gateB=0;
+function showGate(){ gateA=2+Math.floor(Math.random()*7); gateB=2+Math.floor(Math.random()*7);
+  $("#gateQ").textContent = T().ui.gatePrompt.replace("{q}", gateA+" + "+gateB);
+  $("#gateWrong").style.display="none"; $("#gateInput").value=""; $("#gate").style.display="flex"; setTimeout(()=>$("#gateInput").focus(),60); }
+function checkGate(){ if(parseInt($("#gateInput").value,10)===gateA+gateB){ state.gatePassed=true; $("#gate").style.display="none"; startAdventure(); }
+  else { $("#gateWrong").style.display="block"; $("#gateInput").value=""; $("#gateInput").focus(); } }
+$("#startBtn").addEventListener("click", ()=>{ state.gatePassed ? startAdventure() : showGate(); });
+$("#gateBtn").addEventListener("click", checkGate);
+$("#gateInput").addEventListener("keydown", e=>{ if(e.key==="Enter") checkGate(); });
 $("#micBtn").addEventListener("click", ()=>{ startListening(); });   // tap-to-talk
 $("#sendBtn").addEventListener("click", ()=>{ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); });
 $("#txt").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); }});
@@ -549,7 +587,9 @@ if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(sta
 
 <!-- Open model: Llama-3.2-1B-Instruct runs fully in the browser via WebLLM + WebGPU (no server, no API key). -->
 <script type="module">
-  import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+  // Pinned version (not "latest") so the dependency can't change under us.
+  // Note: browsers don't support SRI on ESM `import`; for full integrity, self-host this pinned bundle.
+  import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm@0.2.84";
   let engine = null, loading = null;
   window.ksbHasWebGPU = !!(navigator.gpu);
   window.ksbLoadModel = function(onProgress){

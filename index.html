@@ -50,6 +50,13 @@
     .modeltoggle input{margin-top:3px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent2)}
     .modelpick{width:100%;margin-top:10px;padding:11px 13px;border-radius:14px;background:rgba(0,0,0,.25);color:#fff;border:1px solid var(--bd);font-family:inherit;font-size:.85rem;cursor:pointer}
     .modelpick option{background:#1c2a63;color:#fff}
+    .voicerow{display:flex;gap:8px;align-items:stretch;margin-top:10px}
+    .voicebtn{flex:0 0 auto;padding:0 14px;border-radius:14px;border:1px solid var(--bd);background:var(--card2);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s,background .2s}
+    .voicebtn:hover{background:rgba(255,255,255,.12)}
+    .voicebtn:active{transform:scale(.95)}
+    .voicebtn.playing{background:linear-gradient(110deg,var(--accent),var(--accent2));color:#3a1d6e}
+    .opt.nudge{animation:nudge .35s ease-in-out 2;border-color:var(--accent)}
+    @keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
     /* story */
     .story{display:none;flex-direction:column;gap:16px;flex:1}
@@ -126,6 +133,12 @@
       <div class="label" data-ui="pickGenre">4. Story type</div>
       <select class="modelpick" id="genreSel" style="margin-top:0"></select>
 
+      <div class="label" data-ui="pickVoice">5. Pick a voice</div>
+      <div class="voicerow">
+        <select class="modelpick" id="voiceSel" style="margin-top:0;flex:1"></select>
+        <button type="button" class="voicebtn" id="voicePreview" data-ui="preview">🔊 Hear it</button>
+      </div>
+
       <label class="modeltoggle"><input type="checkbox" id="useModel"><span data-ui="useModel">🧠 Use open AI model</span></label>
       <select class="modelpick" id="modelPick">
         <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">⭐ Best · Llama 3.2 3B (~2.0 GB, one-time)</option>
@@ -176,7 +189,7 @@
    ========================================================================= */
 const STR = {
   en:{ code:"en-US", name:"English",
-    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",pickLen:"3. Story length",lenShort:"Short",lenMed:"Medium",lenLong:"Long",pickGenre:"4. Story type",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:",useModel:"🧠 Use open AI model — runs in your browser, one-time download (size below) · needs WebGPU",modelLoading:"🧠 Waking up the story brain… ",modelReady:"🧠 Open AI model ready — stories are now AI-generated!",modelNoGpu:"🧠 The open AI model needs a desktop browser with WebGPU and enough memory — using the built-in story engine here (it works great!).",tapTalk:"👆 Tap the mic and talk",didntHear:"Hmm, I didn't catch that — tap the mic and try again, or type below.",hearing:"hearing…",privacy:"🔒 Stories run on your device; nothing is saved. Voice uses your browser's speech service (Chrome sends audio to Google to transcribe) — typing stays fully private.",gateTitle:"Grown-up check 👋",gatePrompt:"Ask a grown-up — what is {q}?",gateBtn:"Start",gateWrong:"Not quite — try again."},
+    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",pickLen:"3. Story length",lenShort:"Short",lenMed:"Medium",lenLong:"Long",pickGenre:"4. Story type",pickVoice:"5. Pick a voice",preview:"🔊 Hear it",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:",useModel:"🧠 Use open AI model — runs in your browser, one-time download (size below) · needs WebGPU",modelLoading:"🧠 Waking up the story brain… ",modelReady:"🧠 Open AI model ready — stories are now AI-generated!",modelNoGpu:"🧠 The open AI model needs a desktop browser with WebGPU and enough memory — using the built-in story engine here (it works great!).",tapTalk:"👆 Tap the mic and talk",didntHear:"Hmm, I didn't catch that — tap the mic and try again, or type below.",hearing:"hearing…",privacy:"🔒 Stories run on your device; nothing is saved. Voice uses your browser's speech service (Chrome sends audio to Google to transcribe) — typing stays fully private.",gateTitle:"Grown-up check 👋",gatePrompt:"Ask a grown-up — what is {q}?",gateBtn:"Start",gateWrong:"Not quite — try again."},
     redirect:"Oh, that path is closed today! Let's head back toward our adventure. What should we do next?",
     reflectQ:"The End! What did you learn from this adventure?",
     validate:["Wow, that is a fantastic point!","What a wonderful idea — well done!","I love how you thought about that!"],
@@ -197,7 +210,7 @@ const STR = {
              "7-12":"With the final clue in hand, the Whispering Woods grows calm and the blue light settles into a friendly glow. The mystery is solved. 🌌 " }
   },
   hi:{ code:"hi-IN", name:"हिन्दी",
-    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",pickLen:"3. कहानी की लंबाई",lenShort:"छोटी",lenMed:"मध्यम",lenLong:"लंबी",pickGenre:"4. कहानी का प्रकार",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:",useModel:"🧠 ओपन एआई मॉडल इस्तेमाल करें — तुम्हारे ब्राउज़र में चलता है, एक बार डाउनलोड (आकार नीचे) · WebGPU ज़रूरी",modelLoading:"🧠 कहानी का दिमाग जाग रहा है… ",modelReady:"🧠 ओपन एआई मॉडल तैयार — अब कहानियाँ एआई से बन रही हैं!",modelNoGpu:"🧠 ओपन एआई मॉडल के लिए पर्याप्त मेमोरी और WebGPU वाला डेस्कटॉप ब्राउज़र चाहिए — यहाँ अंदरूनी कहानी इंजन इस्तेमाल हो रहा है (यह बढ़िया काम करता है!)।",tapTalk:"👆 माइक दबाओ और बोलो",didntHear:"हम्म, मैं समझ नहीं पाया — माइक दबाकर फिर बोलो, या नीचे लिखो।",hearing:"सुन रहा हूँ…",privacy:"🔒 कहानियाँ तुम्हारे डिवाइस पर बनती हैं; कुछ भी सेव नहीं होता। आवाज़ के लिए ब्राउज़र की स्पीच सेवा इस्तेमाल होती है (Chrome आवाज़ Google को भेजता है) — लिखना पूरी तरह निजी रहता है।",gateTitle:"बड़ों की जाँच 👋",gatePrompt:"किसी बड़े से पूछो — {q} कितना होता है?",gateBtn:"शुरू करो",gateWrong:"सही नहीं — फिर कोशिश करो।"},
+    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",pickLen:"3. कहानी की लंबाई",lenShort:"छोटी",lenMed:"मध्यम",lenLong:"लंबी",pickGenre:"4. कहानी का प्रकार",pickVoice:"5. आवाज़ चुनो",preview:"🔊 सुनो",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:",useModel:"🧠 ओपन एआई मॉडल इस्तेमाल करें — तुम्हारे ब्राउज़र में चलता है, एक बार डाउनलोड (आकार नीचे) · WebGPU ज़रूरी",modelLoading:"🧠 कहानी का दिमाग जाग रहा है… ",modelReady:"🧠 ओपन एआई मॉडल तैयार — अब कहानियाँ एआई से बन रही हैं!",modelNoGpu:"🧠 ओपन एआई मॉडल के लिए पर्याप्त मेमोरी और WebGPU वाला डेस्कटॉप ब्राउज़र चाहिए — यहाँ अंदरूनी कहानी इंजन इस्तेमाल हो रहा है (यह बढ़िया काम करता है!)।",tapTalk:"👆 माइक दबाओ और बोलो",didntHear:"हम्म, मैं समझ नहीं पाया — माइक दबाकर फिर बोलो, या नीचे लिखो।",hearing:"सुन रहा हूँ…",privacy:"🔒 कहानियाँ तुम्हारे डिवाइस पर बनती हैं; कुछ भी सेव नहीं होता। आवाज़ के लिए ब्राउज़र की स्पीच सेवा इस्तेमाल होती है (Chrome आवाज़ Google को भेजता है) — लिखना पूरी तरह निजी रहता है।",gateTitle:"बड़ों की जाँच 👋",gatePrompt:"किसी बड़े से पूछो — {q} कितना होता है?",gateBtn:"शुरू करो",gateWrong:"सही नहीं — फिर कोशिश करो।"},
     redirect:"अरे! हम उस रास्ते पर नहीं जा सकते। चलो वापस अपनी कहानी पर चलते हैं। अब आगे क्या करें?",
     reflectQ:"कहानी समाप्त! इस कहानी से आपने क्या सीखा?",
     validate:["वाह, यह तो बहुत बढ़िया बात है!","कितना सुंदर विचार — शाबाश!","मुझे तुम्हारी सोच बहुत पसंद आई!"],
@@ -218,7 +231,7 @@ const STR = {
              "7-12":"आखिरी सुराग हाथ में लेकर, फुसफुसाता जंगल शांत हो जाता है और नीली रोशनी एक दोस्ताना चमक में बदल जाती है। रहस्य सुलझ गया। 🌌 " }
   },
   fi:{ code:"fi-FI", name:"Suomi",
-    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",pickLen:"3. Tarinan pituus",lenShort:"Lyhyt",lenMed:"Keskipitkä",lenLong:"Pitkä",pickGenre:"4. Tarinan tyyppi",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:",useModel:"🧠 Käytä avointa tekoälymallia — toimii selaimessasi, kertalataus (koko alla) · vaatii WebGPU:n",modelLoading:"🧠 Herätellään tarina-aivoja… ",modelReady:"🧠 Avoin tekoälymalli valmis — tarinat luodaan nyt tekoälyllä!",modelNoGpu:"🧠 Avoin tekoälymalli vaatii työpöytäselaimen, jossa on WebGPU ja riittävästi muistia — täällä käytetään sisäänrakennettua tarinamoottoria (se toimii hienosti!).",tapTalk:"👆 Napauta mikkiä ja puhu",didntHear:"Hmm, en saanut selvää — napauta mikkiä ja yritä uudelleen, tai kirjoita alle.",hearing:"kuulen…",privacy:"🔒 Tarinat luodaan laitteellasi; mitään ei tallenneta. Puhe käyttää selaimen puhepalvelua (Chrome lähettää äänen Googlelle) — kirjoittaminen pysyy täysin yksityisenä.",gateTitle:"Aikuisen tarkistus 👋",gatePrompt:"Kysy aikuiselta — paljonko on {q}?",gateBtn:"Aloita",gateWrong:"Ei aivan — yritä uudelleen."},
+    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",pickLen:"3. Tarinan pituus",lenShort:"Lyhyt",lenMed:"Keskipitkä",lenLong:"Pitkä",pickGenre:"4. Tarinan tyyppi",pickVoice:"5. Valitse ääni",preview:"🔊 Kuuntele",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:",useModel:"🧠 Käytä avointa tekoälymallia — toimii selaimessasi, kertalataus (koko alla) · vaatii WebGPU:n",modelLoading:"🧠 Herätellään tarina-aivoja… ",modelReady:"🧠 Avoin tekoälymalli valmis — tarinat luodaan nyt tekoälyllä!",modelNoGpu:"🧠 Avoin tekoälymalli vaatii työpöytäselaimen, jossa on WebGPU ja riittävästi muistia — täällä käytetään sisäänrakennettua tarinamoottoria (se toimii hienosti!).",tapTalk:"👆 Napauta mikkiä ja puhu",didntHear:"Hmm, en saanut selvää — napauta mikkiä ja yritä uudelleen, tai kirjoita alle.",hearing:"kuulen…",privacy:"🔒 Tarinat luodaan laitteellasi; mitään ei tallenneta. Puhe käyttää selaimen puhepalvelua (Chrome lähettää äänen Googlelle) — kirjoittaminen pysyy täysin yksityisenä.",gateTitle:"Aikuisen tarkistus 👋",gatePrompt:"Kysy aikuiselta — paljonko on {q}?",gateBtn:"Aloita",gateWrong:"Ei aivan — yritä uudelleen."},
     redirect:"Hups, se polku onkin suljettu! Palataanpa takaisin seikkailuun. Mitä tehdään seuraavaksi?",
     reflectQ:"Sen pituinen se! Mitä opit tästä seikkailusta?",
     validate:["Vau, sepä oli mahtava oivallus!","Mikä ihana idea — hienoa työtä!","Pidän kovasti siitä, miten ajattelit tuon!"],
@@ -248,7 +261,7 @@ const BANNED = {
 };
 
 /* ============================ STATE ============================ */
-const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false, modelId:null, seed:null, gatePassed:false };
+const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false, modelId:null, seed:null, gatePassed:false, voicePref:null };
 
 /* Random story seeds — make every adventure different (fed to the model; it writes in the locked language) */
 const SEED = {
@@ -267,6 +280,7 @@ function applyUI(lang){
   document.querySelectorAll("[data-ui]").forEach(el=>{ const k=el.getAttribute("data-ui"); if(ui[k]!=null) el.textContent=ui[k]; });
   document.documentElement.lang = lang;
   renderGenres(lang);
+  renderVoices(lang);
 }
 $("#langOpts").addEventListener("click",e=>{ const o=e.target.closest(".opt"); if(!o)return;
   document.querySelectorAll("#langOpts .opt").forEach(x=>x.classList.remove("sel")); o.classList.add("sel");
@@ -293,10 +307,31 @@ function renderGenres(lang){
   GENRES.forEach(g=>{ const o=document.createElement("option"); o.value=g.v; o.textContent=g.e+" "+(g[lang]||g.en); sel.appendChild(o); });
   sel.value=cur;
 }
+
+/* ---- Voice characters: accent (US/GB) · gender · speed (medium / medium-fast) ----
+   accent only applies to English; gender + speed apply to every language. The story
+   narrator stays Foxy — this just chooses HOW Foxy's voice sounds. */
+const VOICES = [
+  {id:"us-f", e:"🦊", accent:"US", gender:"F", rate:1.0,  pitch:1.12, en:"Foxy · US girl · medium",      hi:"फॉक्सी · अमेरिकी, लड़की · मध्यम",  fi:"Repolainen · US, tyttö · normaali"},
+  {id:"us-m", e:"🦁", accent:"US", gender:"M", rate:1.12, pitch:0.96, en:"Leo · US boy · medium-fast",    hi:"लियो · अमेरिकी, लड़का · थोड़ा तेज़", fi:"Leo · US, poika · vähän nopea"},
+  {id:"gb-f", e:"🐰", accent:"GB", gender:"F", rate:1.12, pitch:1.1,  en:"Rosie · British girl · medium-fast", hi:"रोज़ी · ब्रिटिश, लड़की · थोड़ा तेज़", fi:"Rosie · brittityttö · vähän nopea"},
+  {id:"gb-m", e:"🐻", accent:"GB", gender:"M", rate:1.0,  pitch:0.96, en:"Barnaby · British boy · medium",  hi:"बार्नबी · ब्रिटिश, लड़का · मध्यम",   fi:"Barnaby · brittipoika · normaali"}
+];
+function renderVoices(lang){
+  const sel=$("#voiceSel"); if(!sel) return; const cur=sel.value||VOICES[0].id; sel.innerHTML="";
+  VOICES.forEach(v=>{ const o=document.createElement("option"); o.value=v.id; o.textContent=v.e+" "+(v[lang]||v.en); sel.appendChild(o); });
+  sel.value=cur; state.voicePref=VOICES.find(v=>v.id===sel.value)||VOICES[0];
+}
+const FEMALE_NAMES=/zira|hazel|susan|catherine|linda|heera|kalpana|samantha|karen|moira|tessa|fiona|serena|aria|jenny|sonia|libby|natasha|noora|selma|female|woman|girl|google us english|google uk english female/i;
+const MALE_NAMES=/david|mark|guy|george|ryan|daniel|alex|fred|oliver|arthur|ravi|hemant|brian|christopher|eric|roger|onni|harri|male|man|boy|google uk english male/i;
+function voiceGender(name){ name=(name||"").toLowerCase(); if(FEMALE_NAMES.test(name)) return "F"; if(MALE_NAMES.test(name)) return "M"; return null; }
 $("#lenOpts").addEventListener("click",e=>{ const o=e.target.closest(".opt"); if(!o)return;
   document.querySelectorAll("#lenOpts .opt").forEach(x=>x.classList.remove("sel")); o.classList.add("sel");
   state.maxTurns=parseInt(o.dataset.len,10); });
 renderGenres("en");
+renderVoices("en");
+$("#voiceSel").addEventListener("change",e=>{ state.voicePref=VOICES.find(v=>v.id===e.target.value)||VOICES[0]; previewVoice(); });
+$("#voicePreview").addEventListener("click",previewVoice);
 (function(){ const md=document.querySelector('#lenOpts [data-len="5"]'); if(md){ md.classList.add("sel"); state.maxTurns=5; } })();
 // On phones, hide the desktop model picker — we use a very light model there automatically.
 (function(){ if(/Android|iPhone|iPad|iPod|Mobile|Mobi|Silk|Kindle/i.test(navigator.userAgent||"")){
@@ -306,15 +341,46 @@ renderGenres("en");
 /* ============================ VOICE I/O ============================ */
 function pickVoice(){
   state.voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-  const pref = STR[state.lang].code.toLowerCase(), base = state.lang;
-  let v = state.voices.find(x=>x.lang && x.lang.toLowerCase()===pref)
-        || state.voices.find(x=>x.lang && x.lang.toLowerCase().startsWith(base));
+  const base = state.lang, vp = state.voicePref || VOICES[0];
+  // Step 1: narrow to the chosen language.
+  let pool = state.voices.filter(x=>x.lang && x.lang.toLowerCase().replace("_","-").startsWith(base));
+  if(!pool.length) pool = state.voices.slice();
+  // Step 2: for English, prefer the chosen accent (US vs GB); ignored for hi/fi (one locale).
+  if(base==="en" && vp.accent){
+    const want = vp.accent==="GB" ? "en-gb" : "en-us";
+    const acc = pool.filter(x=>x.lang.toLowerCase().replace("_","-").startsWith(want));
+    if(acc.length) pool = acc;
+  }
+  // Step 3: prefer the chosen gender by name heuristic; fall back to any in-language voice.
+  const byGender = pool.filter(x=>voiceGender(x.name)===vp.gender);
+  let v = byGender[0] || pool[0] || null;
   // Fallback strategy: native locale voice missing -> would route to cloud TTS (Google/Azure).
-  if(!v && state.voices.length){
+  const hasLocale = state.voices.some(x=>x.lang && x.lang.toLowerCase().startsWith(base));
+  if(!hasLocale && state.voices.length){
     $("#fallbackBanner").style.display="block";
     $("#fallbackBanner").textContent = "ℹ️ No native "+STR[state.lang].name+" voice on this browser — a production build would fall back to cloud TTS (Google/Azure). Using default voice for now.";
   }
-  return v||null;
+  return v;
+}
+
+/* Let the grown-up/kid hear the selected voice before starting. */
+function previewVoice(){
+  if(!window.speechSynthesis) return;
+  if(!state.lang){ document.querySelectorAll("#langOpts .opt").forEach(x=>x.classList.add("nudge")); setTimeout(()=>document.querySelectorAll("#langOpts .opt").forEach(x=>x.classList.remove("nudge")),700); return; }
+  primeTTS();
+  const sample = { en:"Hi! I'm Foxy. This is how I'll tell your story — let's have an adventure!",
+                   hi:"नमस्ते! मैं फॉक्सी हूँ। मैं तुम्हारी कहानी ऐसे सुनाऊँगी — चलो एक रोमांच पर चलें!",
+                   fi:"Hei! Olen Repolainen. Näin kerron tarinasi — lähdetään seikkailuun!" }[state.lang];
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(sample);
+  const v = pickVoice(); if(v) u.voice=v;
+  u.lang = STR[state.lang].code;
+  const vp = state.voicePref || VOICES[0];
+  u.rate = vp.rate; u.pitch = vp.pitch;
+  const btn = $("#voicePreview"); if(btn) btn.classList.add("playing");
+  const off=()=>{ if(btn) btn.classList.remove("playing"); };
+  u.onend=off; u.onerror=off; setTimeout(off, 6000);
+  window.speechSynthesis.speak(u);
 }
 
 function setPhase(p){
@@ -346,8 +412,10 @@ function speak(text, after){
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice(); if(v) u.voice=v;
   u.lang = STR[state.lang].code;          // language lock on synthesis
-  u.rate = state.age==="3-6"?0.9:1.0;
-  u.pitch = state.age==="3-6"?1.2:1.05;   // friendlier buddy voice
+  const vp = state.voicePref || VOICES[0];
+  // Chosen voice sets the base speed/pitch; youngest listeners get it a touch slower & higher.
+  u.rate = state.age==="3-6" ? Math.max(0.85, vp.rate*0.9) : vp.rate;
+  u.pitch = state.age==="3-6" ? Math.min(1.4, vp.pitch+0.12) : vp.pitch;
   let done=false, pump=null;
   const finish=()=>{ if(done) return; done=true; if(pump) clearInterval(pump); if(after) after(); };
   u.onend = finish;                       // mic opens only here (after speech ends)

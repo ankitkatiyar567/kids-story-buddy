@@ -48,6 +48,8 @@
     .note{margin-top:14px;font-size:.78rem;color:var(--muted)}
     .modeltoggle{display:flex;align-items:flex-start;gap:10px;text-align:left;margin-top:22px;padding:14px;border-radius:16px;background:var(--card2);border:1px solid var(--bd);cursor:pointer;font-size:.84rem;line-height:1.4}
     .modeltoggle input{margin-top:3px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent2)}
+    .modelpick{width:100%;margin-top:10px;padding:11px 13px;border-radius:14px;background:rgba(0,0,0,.25);color:#fff;border:1px solid var(--bd);font-family:inherit;font-size:.85rem;cursor:pointer}
+    .modelpick option{background:#1c2a63;color:#fff}
 
     /* story */
     .story{display:none;flex-direction:column;gap:16px;flex:1}
@@ -108,6 +110,11 @@
       </div>
 
       <label class="modeltoggle"><input type="checkbox" id="useModel"><span data-ui="useModel">🧠 Use open AI model</span></label>
+      <select class="modelpick" id="modelPick">
+        <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">⭐ Best · Llama 3.2 3B (~2.0 GB, one-time)</option>
+        <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Balanced · Qwen2.5 1.5B (~1.0 GB)</option>
+        <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Fast · Llama 3.2 1B (~0.9 GB)</option>
+      </select>
       <button class="start" id="startBtn" disabled data-ui="start">▶ Start the Adventure!</button>
       <div class="note" data-ui="micNote">🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!</div>
     </section>
@@ -146,8 +153,12 @@ const STR = {
     reflectQ:"The End! What did you learn from this adventure?",
     validate:["Wow, that is a fantastic point!","What a wonderful idea — well done!","I love how you thought about that!"],
     recapLead:"Here is the AI Buddy Version:",
-    opening:{ "3-6":"Hello, little friend! I am Foxy. 🦊 We are in a sunny, happy forest. A tiny bunny waves at us. What should we do first?",
-              "7-12":"Greetings, explorer! I'm Foxy, your story guide. 🦊 We stand at the edge of the Whispering Woods, where a faint blue light flickers between the trees. A small map flutters to your feet. What's your first move?" },
+    opening:{ "3-6":["Hello, little friend! I am Foxy. 🦊 We are in a sunny, happy forest. A tiny bunny waves at us. What should we do first?",
+                      "Hi there! I'm Foxy. 🦊 We're floating on a soft cloud above a candy kingdom, and a little star giggles beside us. What should we do first?",
+                      "Hello! I'm Foxy. 🦊 We just splashed into a friendly blue ocean where a baby dolphin wants to play. What should we do first?"],
+              "7-12":["Greetings, explorer! I'm Foxy, your story guide. 🦊 We stand at the edge of the Whispering Woods, where a faint blue light flickers between the trees. A small map flutters to your feet. What's your first move?",
+                      "Welcome, adventurer! I'm Foxy. 🦊 We've landed at a bright space station orbiting a candy-colored planet, and one console blinks with a tiny mystery. What's your first move?",
+                      "Ready, explorer? I'm Foxy. 🦊 We've found a hidden jungle temple where glowing symbols hum softly on the walls. What's your first move?"] },
     cont:{ "3-6":["Yay! Because you said “{c}”, a friendly bird sings a happy song. 🐦 Now we see a little bridge. What should we do?",
                   "Hooray! “{c}” was a great idea! A soft cloud floats down to say hello. ☁️ What do we do next?",
                   "So fun! After we “{c}”, we find shiny flowers that giggle. 🌸 What should we try now?"],
@@ -163,8 +174,12 @@ const STR = {
     reflectQ:"कहानी समाप्त! इस कहानी से आपने क्या सीखा?",
     validate:["वाह, यह तो बहुत बढ़िया बात है!","कितना सुंदर विचार — शाबाश!","मुझे तुम्हारी सोच बहुत पसंद आई!"],
     recapLead:"यह रही एआई दोस्त वाली कहानी:",
-    opening:{ "3-6":"नमस्ते नन्हे दोस्त! मैं हूँ फॉक्सी। 🦊 हम एक प्यारे, धूप वाले जंगल में हैं। एक छोटा खरगोश हमें हाथ हिला रहा है। हम पहले क्या करें?",
-              "7-12":"नमस्ते, खोजी दोस्त! मैं फॉक्सी हूँ, तुम्हारा कहानी-गाइड। 🦊 हम फुसफुसाते जंगल के किनारे खड़े हैं, जहाँ पेड़ों के बीच एक हल्की नीली रोशनी टिमटिमा रही है। एक छोटा नक्शा तुम्हारे पैरों के पास गिरता है। तुम्हारा पहला कदम क्या है?" },
+    opening:{ "3-6":["नमस्ते नन्हे दोस्त! मैं हूँ फॉक्सी। 🦊 हम एक प्यारे, धूप वाले जंगल में हैं। एक छोटा खरगोश हमें हाथ हिला रहा है। हम पहले क्या करें?",
+                      "हैलो! मैं फॉक्सी हूँ। 🦊 हम एक नरम बादल पर एक मिठाई वाले राज्य के ऊपर तैर रहे हैं, और एक नन्हा तारा हमारे पास खिलखिला रहा है। हम पहले क्या करें?",
+                      "नमस्ते! मैं फॉक्सी हूँ। 🦊 हम अभी एक नीले समंदर में छपाक से कूदे, जहाँ एक डॉल्फ़िन का बच्चा खेलना चाहता है। हम पहले क्या करें?"],
+              "7-12":["नमस्ते, खोजी दोस्त! मैं फॉक्सी हूँ, तुम्हारा कहानी-गाइड। 🦊 हम फुसफुसाते जंगल के किनारे खड़े हैं, जहाँ पेड़ों के बीच एक हल्की नीली रोशनी टिमटिमा रही है। एक छोटा नक्शा तुम्हारे पैरों के पास गिरता है। तुम्हारा पहला कदम क्या है?",
+                      "स्वागत है, साहसी दोस्त! मैं फॉक्सी हूँ। 🦊 हम एक चमकीले अंतरिक्ष स्टेशन पर उतरे हैं जो एक रंग-बिरंगे ग्रह का चक्कर लगा रहा है, और एक पैनल पर एक छोटा रहस्य टिमटिमा रहा है। तुम्हारा पहला कदम क्या है?",
+                      "तैयार हो, खोजी? मैं फॉक्सी हूँ। 🦊 हमें एक छिपा हुआ जंगल का मंदिर मिला है, जहाँ दीवारों पर चमकते चिह्न धीरे-धीरे गूँज रहे हैं। तुम्हारा पहला कदम क्या है?"] },
     cont:{ "3-6":["वाह! क्योंकि तुमने कहा “{c}”, एक प्यारी चिड़िया खुशी का गाना गाती है। 🐦 अब हमें एक छोटा पुल दिखता है। हम क्या करें?",
                   "शाबाश! “{c}” बहुत अच्छा विचार था! एक नरम बादल नीचे आकर हेलो कहता है। ☁️ अब आगे क्या करें?",
                   "कितना मज़ा! “{c}” के बाद हमें हँसते हुए चमकीले फूल मिलते हैं। 🌸 अब क्या करें?"],
@@ -180,8 +195,12 @@ const STR = {
     reflectQ:"Sen pituinen se! Mitä opit tästä seikkailusta?",
     validate:["Vau, sepä oli mahtava oivallus!","Mikä ihana idea — hienoa työtä!","Pidän kovasti siitä, miten ajattelit tuon!"],
     recapLead:"Tässä on Tarinakaverin versio:",
-    opening:{ "3-6":"Hei pieni ystävä! Olen Repolainen. 🦊 Olemme aurinkoisessa, iloisessa metsässä. Pieni pupu heiluttaa meille. Mitä tehdään ensin?",
-              "7-12":"Tervehdys, tutkimusmatkailija! Olen Repolainen, tarinaoppaasi. 🦊 Seisomme Kuiskivan metsän reunalla, missä sininen valo välkkyy puiden välissä. Pieni kartta leijuu jalkojesi juureen. Mikä on ensimmäinen siirtosi?" },
+    opening:{ "3-6":["Hei pieni ystävä! Olen Repolainen. 🦊 Olemme aurinkoisessa, iloisessa metsässä. Pieni pupu heiluttaa meille. Mitä tehdään ensin?",
+                      "Hei! Olen Repolainen. 🦊 Leijumme pehmeällä pilvellä karkkivaltakunnan yllä, ja pieni tähti kikattaa vieressämme. Mitä tehdään ensin?",
+                      "Moi! Olen Repolainen. 🦊 Loiskahdimme juuri ystävälliseen siniseen mereen, jossa delfiininpoikanen haluaa leikkiä. Mitä tehdään ensin?"],
+              "7-12":["Tervehdys, tutkimusmatkailija! Olen Repolainen, tarinaoppaasi. 🦊 Seisomme Kuiskivan metsän reunalla, missä sininen valo välkkyy puiden välissä. Pieni kartta leijuu jalkojesi juureen. Mikä on ensimmäinen siirtosi?",
+                      "Tervetuloa, seikkailija! Olen Repolainen. 🦊 Laskeuduimme kirkkaalle avaruusasemalle, joka kiertää karkinväristä planeettaa, ja yhdellä paneelilla vilkkuu pieni arvoitus. Mikä on ensimmäinen siirtosi?",
+                      "Valmiina, tutkija? Olen Repolainen. 🦊 Löysimme kätketyn viidakkotemppelin, jonka seinillä hehkuvat merkit hyräilevät hiljaa. Mikä on ensimmäinen siirtosi?"] },
     cont:{ "3-6":["Jee! Koska sanoit “{c}”, ystävällinen lintu laulaa iloisen laulun. 🐦 Nyt näemme pienen sillan. Mitä tehdään?",
                   "Hurraa! “{c}” oli hieno idea! Pehmeä pilvi laskeutuu sanomaan hei. ☁️ Mitä seuraavaksi?",
                   "Niin hauskaa! “{c}” jälkeen löydämme kikattavia kukkia. 🌸 Mitä kokeillaan nyt?"],
@@ -201,7 +220,15 @@ const BANNED = {
 };
 
 /* ============================ STATE ============================ */
-const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false };
+const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false, modelId:null, seed:null };
+
+/* Random story seeds — make every adventure different (fed to the model; it writes in the locked language) */
+const SEED = {
+  settings:["a candy kingdom","a deep coral ocean","a floating cloud city","a friendly dinosaur valley","a cozy robot workshop","an enchanted library","a snowy mountain village","a hidden jungle temple","a tiny village inside a flower garden","a bright space station","a desert of singing sands","a kingdom at the end of a rainbow"],
+  companions:["a giggling baby dragon","a wise old owl","a clumsy but kind robot","a talking cat","a shy little star","a brave mouse explorer","a bouncy kangaroo","a gentle friendly giant","a curious penguin","a sleepy koala"],
+  twists:["a gentle mystery to solve","a lost treasure made of kindness","a puzzle that opens a magic door","a wish that needs a brave choice","a new friend who needs a little help","a map with one piece missing"]
+};
+const pick = a => a[Math.floor(Math.random()*a.length)];
 
 const $ = s => document.querySelector(s);
 const T = () => STR[state.lang];
@@ -310,8 +337,10 @@ RULES:
 - Absolutely no violence, weapons, blood, death, romance or adult themes. Stay wholesome.
 - Plain spoken story text only: no markdown, headings, lists, or stage directions.`;
   const msgs = [{role:"system", content:sys}];
-  if(kind==="opening"){ msgs.push({role:"user", content:"Begin a brand-new, imaginative adventure in one or two sentences, then ask me what to do first."}); }
-  else { state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text})); }
+  if(kind==="opening"){
+    const sd = state.seed || {setting:"a magical place",companion:"a friendly animal",twist:"a gentle surprise"};
+    msgs.push({role:"user", content:`Begin a brand-new, imaginative children's adventure set in ${sd.setting}, featuring ${sd.companion}, involving ${sd.twist}. Make it fresh and unlike common stories. Two short sentences, then ask me what to do first.`});
+  } else { state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text})); }
   return msgs;
 }
 
@@ -326,9 +355,8 @@ async function generateScene(kind, choice){
   // LOCAL FALLBACK (templated engine): no WebGPU / model off / load failed.
   await new Promise(r=>setTimeout(r, 200));
   const d = T();
-  if(kind==="opening") return d.opening[state.age];
-  const pool = d.cont[state.age];
-  const tmpl = pool[(state.turn-1)%pool.length];
+  if(kind==="opening"){ const o=d.opening[state.age]; return Array.isArray(o)?pick(o):o; }
+  const tmpl = pick(d.cont[state.age]);
   return tmpl.replace("{c}", (choice||"").slice(0,40));
 }
 
@@ -352,6 +380,8 @@ async function startAdventure(){
   // user-gesture audio unlock
   if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.getVoices(); }
   state.useModel = $("#useModel").checked;
+  state.modelId = $("#modelPick").value; window.ksbModelId = state.modelId;
+  state.seed = { setting:pick(SEED.settings), companion:pick(SEED.companions), twist:pick(SEED.twists) };
   state.recog = buildRecognizer();
   if(!state.recog){ $("#fallbackBanner").style.display="block"; $("#fallbackBanner").textContent="ℹ️ Voice input isn't supported in this browser — you can type your answers. (A production build would use a cloud Speech-to-Text fallback.)"; }
   state.context=[]; state.turn=0; state.started=true; state.awaitingReflection=false;
@@ -440,14 +470,16 @@ if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(sta
   window.ksbLoadModel = function(onProgress){
     if(engine) return Promise.resolve(true);
     if(loading) return loading;
-    loading = CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    const mid = window.ksbModelId || "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+    loading = CreateMLCEngine(mid,
       { initProgressCallback: p => { try{ onProgress && onProgress(p); }catch(e){} } })
       .then(e => { engine = e; return true; });
     return loading;
   };
-  window.ksbGenerate = async function(messages){
+  window.ksbGenerate = async function(messages, temp){
     if(!engine) throw new Error("model not loaded");
-    const r = await engine.chat.completions.create({ messages, temperature:0.85, max_tokens:180 });
+    const r = await engine.chat.completions.create({
+      messages, temperature: (temp!=null?temp:1.0), top_p:0.95, frequency_penalty:0.3, max_tokens:200 });
     return (r.choices && r.choices[0] && r.choices[0].message.content) || "";
   };
 </script>

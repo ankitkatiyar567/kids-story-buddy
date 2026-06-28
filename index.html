@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KSB · Kids Story Buddy 🪄</title>
+  <meta name="theme-color" content="#3a1d6e" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%237c5cff'/%3E%3Ctext x='50' y='70' font-size='56' text-anchor='middle'%3E%F0%9F%AA%84%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root{
+      --bg1:#3a1d6e; --bg2:#1c2a63; --bg3:#0e7c6b;
+      --card:rgba(255,255,255,.12); --card2:rgba(255,255,255,.18);
+      --bd:rgba(255,255,255,.28); --ink:#fff; --muted:#d7d3f0;
+      --accent:#ffd166; --accent2:#ff6fae; --ok:#5ef0b0; --warn:#ffb86b; --bad:#ff7a7a;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{font-family:'Comic Sans MS','Trebuchet MS',system-ui,sans-serif;color:var(--ink);
+      background:linear-gradient(140deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+      background-attachment:fixed;min-height:100vh;overflow-x:hidden}
+    .stars{position:fixed;inset:0;z-index:0;pointer-events:none;
+      background-image:radial-gradient(2px 2px at 20% 30%,#fff,transparent),radial-gradient(2px 2px at 70% 60%,#fff,transparent),radial-gradient(1px 1px at 40% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 85% 20%,#fff,transparent),radial-gradient(1px 1px at 55% 15%,#fff,transparent);
+      opacity:.5;animation:tw 4s ease-in-out infinite}
+    @keyframes tw{0%,100%{opacity:.4}50%{opacity:.75}}
+    .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:20px 18px 48px;min-height:100vh;display:flex;flex-direction:column}
+    .glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:24px;box-shadow:0 16px 50px rgba(0,0,0,.3)}
+
+    header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .logo{font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8px}
+    .lock-badge{display:none;align-items:center;gap:8px;font-size:.82rem;background:rgba(0,0,0,.25);border:1px solid var(--bd);padding:7px 13px;border-radius:999px}
+    .lock-badge b{color:var(--accent)}
+
+    /* setup */
+    .setup{padding:30px 26px;text-align:center}
+    .setup h1{font-size:1.9rem;margin-bottom:6px}
+    .setup p{color:var(--muted);margin-bottom:22px}
+    .label{text-align:left;font-weight:700;margin:18px 0 10px;font-size:1.05rem}
+    .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .opts.two{grid-template-columns:repeat(2,1fr)}
+    .opt{padding:16px 10px;border-radius:18px;background:var(--card2);border:2px solid transparent;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,border-color .2s,background .2s}
+    .opt .big{font-size:1.7rem;display:block;margin-bottom:5px}
+    .opt .sm{font-weight:400;font-size:.74rem;color:var(--muted)}
+    .opt:hover{transform:translateY(-3px)}
+    .opt.sel{border-color:var(--accent);background:rgba(255,209,102,.18)}
+    .start{margin-top:26px;width:100%;padding:18px;border:none;border-radius:18px;font-size:1.3rem;font-weight:800;color:#3a1d6e;cursor:pointer;background:linear-gradient(110deg,var(--accent),var(--accent2));box-shadow:0 12px 30px rgba(255,111,174,.4);transition:transform .15s,opacity .2s}
+    .start:hover{transform:translateY(-3px)}
+    .start:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .note{margin-top:14px;font-size:.78rem;color:var(--muted)}
+
+    /* story */
+    .story{display:none;flex-direction:column;gap:16px;flex:1}
+    .buddy{padding:22px;text-align:center}
+    .avatar{font-size:3.4rem;display:inline-block;transition:transform .3s}
+    .avatar.speaking{animation:bounce .6s ease-in-out infinite}
+    .avatar.listening{animation:pulse 1.2s ease-in-out infinite}
+    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+    .status{margin-top:8px;font-weight:700;font-size:1.05rem;min-height:1.3em}
+    .status .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+    .s-speak{color:var(--accent)} .s-listen{color:var(--ok)} .s-think{color:var(--accent2)} .s-safe{color:var(--warn)}
+
+    .scene{padding:22px;font-size:1.18rem;line-height:1.6;min-height:90px}
+    .scene.toddler{font-size:1.35rem;line-height:1.7}
+    .turnbar{display:flex;gap:6px;justify-content:center;margin-top:14px}
+    .pip{width:26px;height:8px;border-radius:5px;background:rgba(255,255,255,.25)}
+    .pip.on{background:var(--accent)}
+
+    .controls{padding:16px;display:flex;flex-direction:column;gap:12px}
+    .row{display:flex;gap:10px}
+    .mic{flex:0 0 auto;width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;font-size:1.6rem;background:linear-gradient(135deg,var(--accent2),#c44cff);box-shadow:0 8px 22px rgba(196,76,255,.5);transition:transform .15s,opacity .2s}
+    .mic:hover{transform:scale(1.06)} .mic.live{animation:pulse 1s infinite;box-shadow:0 0 0 6px rgba(94,240,176,.3)}
+    .mic:disabled{opacity:.4;cursor:not-allowed}
+    .txt{flex:1;border-radius:16px;border:1px solid var(--bd);background:rgba(0,0,0,.2);color:#fff;padding:0 16px;font-size:1rem;font-family:inherit}
+    .txt::placeholder{color:var(--muted)}
+    .send{border:none;border-radius:16px;padding:0 20px;font-weight:800;font-size:1rem;cursor:pointer;background:var(--ok);color:#073}
+    .heard{font-size:.85rem;color:var(--muted);min-height:1.2em;text-align:center}
+    .restart{background:none;border:1px solid var(--bd);color:var(--muted);padding:9px 16px;border-radius:12px;cursor:pointer;font-size:.85rem;align-self:center}
+    .banner{display:none;font-size:.8rem;background:rgba(255,184,107,.18);border:1px solid var(--warn);padding:10px 14px;border-radius:14px;text-align:center}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.74rem}
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="logo">🪄 <b style="color:var(--accent)">KSB</b>&nbsp;·&nbsp;<span data-ui="title">Kids Story Buddy</span></div>
+      <div class="lock-badge" id="lock"><span data-ui="locked">Locked</span>: <b id="lockLang"></b> · <b id="lockAge"></b></div>
+    </header>
+
+    <!-- SETUP -->
+    <section class="glass setup" id="setup">
+      <h1>🪄 <span data-ui="title">Kids Story Buddy</span></h1>
+      <p data-ui="tagline">Tell a story together — just with your voice!</p>
+
+      <div class="label" data-ui="pickLang">1. Pick your language</div>
+      <div class="opts" id="langOpts">
+        <div class="opt" data-lang="en"><span class="big">🇬🇧</span>English</div>
+        <div class="opt" data-lang="hi"><span class="big">🇮🇳</span>हिन्दी</div>
+        <div class="opt" data-lang="fi"><span class="big">🇫🇮</span>Suomi</div>
+      </div>
+
+      <div class="label" data-ui="pickAge">2. How old are you?</div>
+      <div class="opts two" id="ageOpts">
+        <div class="opt" data-age="3-6"><span class="big">🧸</span>3–6<span class="sm" data-ui="ageA">Listening &amp; phonics</span></div>
+        <div class="opt" data-age="7-12"><span class="big">🚀</span>7–12<span class="sm" data-ui="ageB">Mystery &amp; thinking</span></div>
+      </div>
+
+      <button class="start" id="startBtn" disabled data-ui="start">▶ Start the Adventure!</button>
+      <div class="note" data-ui="micNote">🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!</div>
+    </section>
+
+    <!-- STORY -->
+    <section class="story" id="story">
+      <div class="banner glass" id="fallbackBanner"></div>
+      <div class="glass buddy">
+        <div class="avatar" id="avatar">🦊</div>
+        <div class="status" id="status"></div>
+        <div class="turnbar" id="turnbar"></div>
+      </div>
+      <div class="glass scene" id="scene"></div>
+      <div class="glass controls">
+        <div class="heard" id="heard"></div>
+        <div class="row">
+          <button class="mic" id="micBtn" title="Talk">🎙️</button>
+          <input class="txt" id="txt" placeholder="…or type here" />
+          <button class="send" id="sendBtn" data-ui="send">Send</button>
+        </div>
+        <button class="restart" id="restartBtn" data-ui="restart">↺ New adventure</button>
+      </div>
+    </section>
+
+    <footer>Prototype · Web Speech API + local story engine · swap <code>generateScene()</code> for a real LLM</footer>
+  </div>
+
+<script>
+/* =========================================================================
+   STRINGS — every visible/spoken string keyed by language (Language Lock)
+   ========================================================================= */
+const STR = {
+  en:{ code:"en-US", name:"English",
+    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:"},
+    redirect:"Oh, that path is closed today! Let's head back toward our adventure. What should we do next?",
+    reflectQ:"The End! What did you learn from this adventure?",
+    validate:["Wow, that is a fantastic point!","What a wonderful idea — well done!","I love how you thought about that!"],
+    recapLead:"Here is the AI Buddy Version:",
+    opening:{ "3-6":"Hello, little friend! I am Foxy. 🦊 We are in a sunny, happy forest. A tiny bunny waves at us. What should we do first?",
+              "7-12":"Greetings, explorer! I'm Foxy, your story guide. 🦊 We stand at the edge of the Whispering Woods, where a faint blue light flickers between the trees. A small map flutters to your feet. What's your first move?" },
+    cont:{ "3-6":["Yay! Because you said “{c}”, a friendly bird sings a happy song. 🐦 Now we see a little bridge. What should we do?",
+                  "Hooray! “{c}” was a great idea! A soft cloud floats down to say hello. ☁️ What do we do next?",
+                  "So fun! After we “{c}”, we find shiny flowers that giggle. 🌸 What should we try now?"],
+           "7-12":["Good call. As you decide to “{c}”, the blue light pulses and reveals a hidden stone door etched with stars. ✨ What do you investigate?",
+                   "Clever! Choosing to “{c}” leads you to a clearing where a wise old owl asks a riddle. 🦉 How do you respond?",
+                   "Interesting move. “{c}” uncovers a narrow path with glowing footprints heading two ways. 🐾 Which way, and why?"] },
+    ending:{ "3-6":"And so, after all our fun, we hug our forest friends and wave goodbye. 🌈 ",
+             "7-12":"With the final clue in hand, the Whispering Woods grows calm and the blue light settles into a friendly glow. The mystery is solved. 🌌 " }
+  },
+  hi:{ code:"hi-IN", name:"हिन्दी",
+    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:"},
+    redirect:"अरे! हम उस रास्ते पर नहीं जा सकते। चलो वापस अपनी कहानी पर चलते हैं। अब आगे क्या करें?",
+    reflectQ:"कहानी समाप्त! इस कहानी से आपने क्या सीखा?",
+    validate:["वाह, यह तो बहुत बढ़िया बात है!","कितना सुंदर विचार — शाबाश!","मुझे तुम्हारी सोच बहुत पसंद आई!"],
+    recapLead:"यह रही एआई दोस्त वाली कहानी:",
+    opening:{ "3-6":"नमस्ते नन्हे दोस्त! मैं हूँ फॉक्सी। 🦊 हम एक प्यारे, धूप वाले जंगल में हैं। एक छोटा खरगोश हमें हाथ हिला रहा है। हम पहले क्या करें?",
+              "7-12":"नमस्ते, खोजी दोस्त! मैं फॉक्सी हूँ, तुम्हारा कहानी-गाइड। 🦊 हम फुसफुसाते जंगल के किनारे खड़े हैं, जहाँ पेड़ों के बीच एक हल्की नीली रोशनी टिमटिमा रही है। एक छोटा नक्शा तुम्हारे पैरों के पास गिरता है। तुम्हारा पहला कदम क्या है?" },
+    cont:{ "3-6":["वाह! क्योंकि तुमने कहा “{c}”, एक प्यारी चिड़िया खुशी का गाना गाती है। 🐦 अब हमें एक छोटा पुल दिखता है। हम क्या करें?",
+                  "शाबाश! “{c}” बहुत अच्छा विचार था! एक नरम बादल नीचे आकर हेलो कहता है। ☁️ अब आगे क्या करें?",
+                  "कितना मज़ा! “{c}” के बाद हमें हँसते हुए चमकीले फूल मिलते हैं। 🌸 अब क्या करें?"],
+           "7-12":["बढ़िया चुनाव। जब तुमने “{c}” करने का फैसला किया, नीली रोशनी तेज़ हुई और तारों से सजा एक छिपा पत्थर का दरवाज़ा दिखा। ✨ तुम क्या जाँचोगे?",
+                   "होशियार! “{c}” तुम्हें एक मैदान में ले जाता है जहाँ एक बुद्धिमान उल्लू पहेली पूछता है। 🦉 तुम क्या जवाब दोगे?",
+                   "दिलचस्प कदम। “{c}” से चमकते पैरों के निशान वाला रास्ता खुलता है जो दो ओर जाता है। 🐾 किस ओर, और क्यों?"] },
+    ending:{ "3-6":"और इस तरह, खूब मस्ती के बाद, हम अपने जंगल के दोस्तों को गले लगाते हैं और अलविदा कहते हैं। 🌈 ",
+             "7-12":"आखिरी सुराग हाथ में लेकर, फुसफुसाता जंगल शांत हो जाता है और नीली रोशनी एक दोस्ताना चमक में बदल जाती है। रहस्य सुलझ गया। 🌌 " }
+  },
+  fi:{ code:"fi-FI", name:"Suomi",
+    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:"},
+    redirect:"Hups, se polku onkin suljettu! Palataanpa takaisin seikkailuun. Mitä tehdään seuraavaksi?",
+    reflectQ:"Sen pituinen se! Mitä opit tästä seikkailusta?",
+    validate:["Vau, sepä oli mahtava oivallus!","Mikä ihana idea — hienoa työtä!","Pidän kovasti siitä, miten ajattelit tuon!"],
+    recapLead:"Tässä on Tarinakaverin versio:",
+    opening:{ "3-6":"Hei pieni ystävä! Olen Repolainen. 🦊 Olemme aurinkoisessa, iloisessa metsässä. Pieni pupu heiluttaa meille. Mitä tehdään ensin?",
+              "7-12":"Tervehdys, tutkimusmatkailija! Olen Repolainen, tarinaoppaasi. 🦊 Seisomme Kuiskivan metsän reunalla, missä sininen valo välkkyy puiden välissä. Pieni kartta leijuu jalkojesi juureen. Mikä on ensimmäinen siirtosi?" },
+    cont:{ "3-6":["Jee! Koska sanoit “{c}”, ystävällinen lintu laulaa iloisen laulun. 🐦 Nyt näemme pienen sillan. Mitä tehdään?",
+                  "Hurraa! “{c}” oli hieno idea! Pehmeä pilvi laskeutuu sanomaan hei. ☁️ Mitä seuraavaksi?",
+                  "Niin hauskaa! “{c}” jälkeen löydämme kikattavia kukkia. 🌸 Mitä kokeillaan nyt?"],
+           "7-12":["Hyvä veto. Kun päätät “{c}”, sininen valo sykkii ja paljastaa tähdillä koristellun kiviportin. ✨ Mitä tutkit?",
+                   "Fiksua! “{c}” johtaa aukiolle, jossa viisas pöllö esittää arvoituksen. 🦉 Miten vastaat?",
+                   "Mielenkiintoinen siirto. “{c}” paljastaa kapean polun hehkuvine jalanjälkineen kahteen suuntaan. 🐾 Kumpi suunta, ja miksi?"] },
+    ending:{ "3-6":"Ja niin, kaiken hauskanpidon jälkeen halaamme metsäystäviämme ja heilutamme heipat. 🌈 ",
+             "7-12":"Viimeinen johtolanka kädessä Kuiskiva metsä rauhoittuu ja sininen valo asettuu ystävälliseksi hehkuksi. Mysteeri on ratkaistu. 🌌 " }
+  }
+};
+
+/* Illustrative banned-word lists (expand for production). Bypass LLM + redirect. */
+const BANNED = {
+  en:["gun","knife","kill","blood","stupid","hate","damn","hell","idiot","shut up","weapon","fight","dead"],
+  hi:["बंदूक","चाकू","मार","खून","बेवकूफ","नफरत","मूर्ख","लड़ाई"],
+  fi:["ase","veitsi","tappaa","veri","tyhmä","viha","idiootti","tappelu"]
+};
+
+/* ============================ STATE ============================ */
+const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null };
+
+const $ = s => document.querySelector(s);
+const T = () => STR[state.lang];
+
+/* ============================ SETUP UI ============================ */
+function applyUI(lang){
+  const ui = STR[lang].ui;
+  document.querySelectorAll("[data-ui]").forEach(el=>{ const k=el.getAttribute("data-ui"); if(ui[k]!=null) el.textContent=ui[k]; });
+  document.documentElement.lang = lang;
+}
+$("#langOpts").addEventListener("click",e=>{ const o=e.target.closest(".opt"); if(!o)return;
+  document.querySelectorAll("#langOpts .opt").forEach(x=>x.classList.remove("sel")); o.classList.add("sel");
+  state.lang=o.dataset.lang; applyUI(state.lang); checkReady(); });
+$("#ageOpts").addEventListener("click",e=>{ const o=e.target.closest(".opt"); if(!o)return;
+  document.querySelectorAll("#ageOpts .opt").forEach(x=>x.classList.remove("sel")); o.classList.add("sel");
+  state.age=o.dataset.age; checkReady(); });
+function checkReady(){ $("#startBtn").disabled = !(state.lang && state.age); }
+
+/* ============================ VOICE I/O ============================ */
+function pickVoice(){
+  state.voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const pref = STR[state.lang].code.toLowerCase(), base = state.lang;
+  let v = state.voices.find(x=>x.lang && x.lang.toLowerCase()===pref)
+        || state.voices.find(x=>x.lang && x.lang.toLowerCase().startsWith(base));
+  // Fallback strategy: native locale voice missing -> would route to cloud TTS (Google/Azure).
+  if(!v && state.voices.length){
+    $("#fallbackBanner").style.display="block";
+    $("#fallbackBanner").textContent = "ℹ️ No native "+STR[state.lang].name+" voice on this browser — a production build would fall back to cloud TTS (Google/Azure). Using default voice for now.";
+  }
+  return v||null;
+}
+
+function setPhase(p){
+  state.phase=p; const a=$("#avatar"), s=$("#status"), ui=T().ui;
+  a.className="avatar"; let txt="", cls="";
+  if(p==="speaking"){a.classList.add("speaking");txt=ui.speaking;cls="s-speak";}
+  else if(p==="listening"){a.classList.add("listening");txt=ui.listening;cls="s-listen";}
+  else if(p==="thinking"){txt=ui.thinking;cls="s-think";}
+  s.innerHTML = txt? `<span class="dot ${cls}" style="background:currentColor"></span><span class="${cls}">${txt}</span>` : "";
+  $("#micBtn").disabled = (p!=="listening");
+  $("#micBtn").classList.toggle("live", p==="listening");
+}
+
+/* INTERLOCK: speak -> on TTS end -> open mic. Mic never opens during speech. */
+function speak(text, after){
+  stopListening();                       // ensure mic is closed before audio plays
+  setPhase("speaking");
+  $("#scene").classList.toggle("toddler", state.age==="3-6");
+  $("#scene").textContent = text;
+  if(!window.speechSynthesis){ setTimeout(()=>{ if(after)after(); },300); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const v = pickVoice(); if(v) u.voice=v;
+  u.lang = STR[state.lang].code;          // language lock on synthesis
+  u.rate = state.age==="3-6"?0.9:1.0;
+  let done=false; const finish=()=>{ if(done) return; done=true; if(after) after(); };
+  u.onend = finish;                       // mic opens only here (after speech ends)
+  u.onerror = finish;
+  // robustness: some browsers never fire onend without an audio backend — guarantee progress
+  setTimeout(finish, Math.min(15000, Math.max(2500, text.length*65)));
+  window.speechSynthesis.speak(u);
+}
+
+function buildRecognizer(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ return null; }
+  const r = new SR();
+  r.lang = STR[state.lang].code;          // language lock on recognition
+  r.interimResults=false; r.maxAlternatives=1; r.continuous=false;
+  r.onresult = ev=>{ const t = ev.results[0][0].transcript; onChildInput(t, performance.now()); };
+  r.onerror = ()=>{ setPhase("listening"); };
+  r.onend   = ()=>{ if(state.phase==="listening") $("#micBtn").classList.remove("live"); };
+  return r;
+}
+function startListening(){
+  setPhase("listening");
+  if(state.recog){ try{ state.recog.start(); }catch(e){} }
+}
+function stopListening(){ if(state.recog){ try{ state.recog.abort(); }catch(e){} } }
+
+/* ============================ SAFETY ============================ */
+function isUnsafe(text){
+  const t = " "+text.toLowerCase()+" ";
+  return BANNED[state.lang].some(w=> t.includes(w.toLowerCase()));
+}
+
+/* ===================== STORY ENGINE (LLM SEAM) =====================
+   Local, offline branching engine. To use a real LLM, replace the body
+   of generateScene() with a fetch() to your backend that injects:
+     - the locked language (state.lang) into the system prompt
+     - the age tier (state.age) for vocabulary/complexity
+     - the running context array
+   and returns { text }.  Everything else (interlock, safety, reflection)
+   stays the same.
+==================================================================== */
+async function generateScene(kind, choice){
+  // await fetch("/api/story",{method:"POST",body:JSON.stringify({lang:state.lang,age:state.age,turn:state.turn,context:state.context,choice})})...
+  await new Promise(r=>setTimeout(r, 250));         // simulate latency (well under 2s)
+  const d = T();
+  if(kind==="opening") return d.opening[state.age];
+  const pool = d.cont[state.age];
+  const tmpl = pool[(state.turn-1)%pool.length];
+  return tmpl.replace("{c}", (choice||"").slice(0,40));
+}
+
+/* ============================ FLOW ============================ */
+function renderTurns(){
+  const tb=$("#turnbar"); tb.innerHTML="";
+  for(let i=0;i<state.maxTurns;i++){ const p=document.createElement("div"); p.className="pip"+(i<state.turn?" on":""); tb.appendChild(p); }
+}
+
+async function startAdventure(){
+  // user-gesture audio unlock
+  if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.getVoices(); }
+  state.recog = buildRecognizer();
+  if(!state.recog){ $("#fallbackBanner").style.display="block"; $("#fallbackBanner").textContent="ℹ️ Voice input isn't supported in this browser — you can type your answers. (A production build would use a cloud Speech-to-Text fallback.)"; }
+  state.context=[]; state.turn=0; state.started=true; state.awaitingReflection=false;
+  $("#setup").style.display="none"; $("#story").style.display="flex";
+  $("#lock").style.display="flex"; $("#lockLang").textContent=STR[state.lang].name; $("#lockAge").textContent=state.age;
+  renderTurns();
+  setPhase("thinking");
+  const opening = await generateScene("opening");
+  state.context.push({role:"buddy",text:opening});
+  speak(opening, startListening);
+}
+
+function onChildInput(text, tStart){
+  if(!text || !text.trim()) { startListening(); return; }
+  $("#heard").textContent = T().ui.heardYou+' "'+text+'"';
+  $("#txt").value="";
+  stopListening();
+
+  // SAFETY: intercept locally, bypass story engine entirely, purge phrase, redirect.
+  if(isUnsafe(text)){
+    setPhase("safe");
+    speak(T().redirect, startListening);   // local template, no engine call
+    return;                                // phrase is never stored in context
+  }
+
+  if(state.awaitingReflection){ return handleReflection(text); }
+
+  state.context.push({role:"child",text});
+  state.turn++;
+  renderTurns();
+  setPhase("thinking");
+
+  if(state.turn>=state.maxTurns){ return endStory(text, tStart); }
+
+  generateScene("continue", text).then(scene=>{
+    state.context.push({role:"buddy",text:scene});
+    logLatency(tStart);
+    speak(scene, startListening);
+  });
+}
+
+async function endStory(lastChoice, tStart){
+  const d=T();
+  const ending = d.ending[state.age] + " ";
+  const scene = ending + d.reflectQ;          // resolve happily + reflection question
+  state.awaitingReflection=true;
+  logLatency(tStart);
+  speak(scene, startListening);
+}
+
+function handleReflection(answer){
+  const d=T();
+  const praise = d.validate[Math.floor(Math.random()*d.validate.length)];
+  // 2-sentence "AI Buddy Version" recap of the moral, in the locked language.
+  const morals = {
+    "3-6": { en:"Being kind and curious makes every day an adventure. When we try new things with a smile, wonderful surprises find us!",
+             hi:"दयालु और जिज्ञासु होना हर दिन को रोमांच बना देता है। जब हम मुस्कुराकर नई चीज़ें आज़माते हैं, तो सुंदर आश्चर्य हमें ढूँढ लेते हैं!",
+             fi:"Ystävällisyys ja uteliaisuus tekevät jokaisesta päivästä seikkailun. Kun kokeilemme uutta hymyssä suin, ihanat yllätykset löytävät meidät!" },
+    "7-12":{ en:"Every choice you made shaped the story — that's the power of thinking before you act. Courage and curiosity, used together, can solve almost any mystery.",
+             hi:"तुम्हारा हर चुनाव कहानी को आकार देता रहा — यही है सोच-समझकर काम करने की ताकत। हिम्मत और जिज्ञासा साथ मिलकर लगभग हर रहस्य सुलझा सकती हैं।",
+             fi:"Jokainen valintasi muovasi tarinaa — siinä on ajattelun voima ennen toimintaa. Rohkeus ja uteliaisuus yhdessä ratkaisevat lähes minkä tahansa mysteerin." }
+  };
+  const recap = d.recapLead+" "+morals[state.age][state.lang];
+  state.awaitingReflection=false;
+  speak(praise+" "+recap, ()=>{ setPhase("idle"); $("#status").textContent="🌟"; });
+}
+
+let lat0=null;
+function logLatency(tStart){ if(tStart){ const ms=Math.round(performance.now()-tStart); console.log("round-trip latency: "+ms+"ms (target <2000ms)"); } }
+
+/* ============================ EVENTS ============================ */
+$("#startBtn").addEventListener("click", startAdventure);
+$("#micBtn").addEventListener("click", ()=>{ if(state.phase==="listening") startListening(); });
+$("#sendBtn").addEventListener("click", ()=>{ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); });
+$("#txt").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); }});
+$("#restartBtn").addEventListener("click", ()=>{ if(window.speechSynthesis)window.speechSynthesis.cancel(); stopListening(); location.reload(); });
+if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(state.lang) pickVoice(); };
+</script>
+</body>
+</html>

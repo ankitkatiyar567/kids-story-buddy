@@ -139,7 +139,7 @@
       </div>
     </section>
 
-    <footer>Prototype · Web Speech API + local story engine · swap <code>generateScene()</code> for a real LLM</footer>
+    <footer>Prototype · teach-and-correct story loop · Web Speech API · open model (Llama&nbsp;3.2) in-browser via WebLLM/WebGPU, with a local fallback</footer>
   </div>
 
 <script>
@@ -340,36 +340,46 @@ function isUnsafe(text){
    and returns { text }.  Everything else (interlock, safety, reflection)
    stays the same.
 ==================================================================== */
-function buildMessages(kind, choice){
-  const langName = STR[state.lang].name;
+/* TEACH-AND-CORRECT loop: paragraph -> question -> judge answer (correct if wrong) -> continue -> learning question + correction. Needs the open model. */
+function buildMessages(kind){
+  const langName = STR[state.lang].name, d = T();
+  const sd = state.seed || {setting:"a magical place",companion:"a friendly animal",twist:"a gentle surprise"};
   const ageGuide = state.age==="3-6"
-    ? "The child is 3-6 years old. Use very short, simple sentences and easy words. Keep it gentle, warm and happy. Never include anything scary, sad, violent, or complex."
-    : "The child is 7-12 years old. Use richer vocabulary, light mystery and problem-solving, but keep it age-appropriate and never scary or violent.";
-  const sys = `You are Foxy, a friendly storytelling buddy for children guiding a spoken "choose your own adventure".
+    ? "The child is 3-6 years old: use 1-2 very short, simple sentences per story paragraph and very easy words; gentle, warm and happy."
+    : "The child is 7-12 years old: use 3-4 sentences per paragraph with slightly richer words and a light, friendly mystery feel.";
+  const sys = `You are Foxy, a warm and patient storytelling teacher for one child. You tell an interactive LEARNING story in small pieces.
 RULES:
 - Respond ONLY in ${langName}. Never use another language and never translate.
 - ${ageGuide}
-- Keep each reply to 1-3 short sentences, then ask the child what they want to do next.
-- Absolutely no violence, weapons, blood, death, romance or adult themes. Stay wholesome.
-- Plain spoken story text only: no markdown, headings, lists, or stage directions.`;
+- After each short story paragraph, ask exactly ONE simple question whose answer is clear from what you just told.
+- When the child answers: react kindly FIRST — if right, praise warmly in one short sentence; if wrong, gently give the correct answer in one short sentence. Never scold.
+- Keep it wholesome: no violence, weapons, fear, sadness, or adult themes.
+- Plain spoken text only: no markdown, no lists, no bracketed notes, no stage directions.`;
   const msgs = [{role:"system", content:sys}];
-  if(kind==="opening"){
-    const sd = state.seed || {setting:"a magical place",companion:"a friendly animal",twist:"a gentle surprise"};
-    msgs.push({role:"user", content:`Begin a brand-new, imaginative children's adventure set in ${sd.setting}, featuring ${sd.companion}, involving ${sd.twist}. Make it fresh and unlike common stories. Two short sentences, then ask me what to do first.`});
-  } else { state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text})); }
+  state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text}));
+  let dir="";
+  if(kind==="opening")        dir=`[Begin the story now, set in ${sd.setting}, featuring ${sd.companion}, involving ${sd.twist}. Tell the first short paragraph, then ask one simple question about it.]`;
+  else if(kind==="continue")  dir=`\n\n[First react to my answer above (praise if right, gently correct if wrong — one short sentence). Then tell the next short paragraph and ask one new simple question.]`;
+  else if(kind==="final")     dir=`\n\n[First react to my answer above (praise or gently correct, one short sentence). Then bring the story to a happy ending in one short paragraph. Then ask me exactly this and add nothing after it: "${d.reflectQ}"]`;
+  else if(kind==="reflection")dir=`\n\n[That was my answer about what I learned from the story. Tell me warmly if I got it right; if not quite, gently tell me the real lesson in one sentence. Then give a two-sentence summary of the lesson beginning exactly with: "${d.recapLead}". Then a short, warm goodbye.]`;
+  if(kind==="opening"){ msgs.push({role:"user", content:dir}); }
+  else { const last=msgs[msgs.length-1]; if(last && last.role==="user") last.content += dir; else msgs.push({role:"user", content:dir}); }
   return msgs;
 }
 
-async function generateScene(kind, choice){
-  // OPEN MODEL PATH: Llama-3.2-1B running in-browser via WebLLM/WebGPU (see module script).
-  if(state.modelReady && typeof window.ksbGenerate==="function"){
-    try{
-      const out = (await window.ksbGenerate(buildMessages(kind, choice))).trim();
-      if(out && !isUnsafe(out)) return out;            // output safety guard
-    }catch(e){ console.warn("model gen failed, using local engine", e); }
-  }
-  // LOCAL FALLBACK (templated engine): no WebGPU / model off / load failed.
-  await new Promise(r=>setTimeout(r, 200));
+async function modelReply(kind){
+  if(!(state.modelReady && typeof window.ksbGenerate==="function")) return null;
+  try{
+    const out = (await window.ksbGenerate(buildMessages(kind), kind==="opening"?1.05:0.85)).trim();
+    if(out && !isUnsafe(out)) return out;              // output safety guard
+  }catch(e){ console.warn("model reply failed, using local engine", e); }
+  return null;
+}
+
+async function generateScene(kind, choice){           // opening / continue
+  const m = await modelReply(kind);
+  if(m) return m;
+  await new Promise(r=>setTimeout(r, 200));            // local fallback (simple adventure, no judging)
   const d = T();
   if(kind==="opening"){ const o=d.opening[state.age]; return Array.isArray(o)?pick(o):o; }
   const tmpl = pick(d.cont[state.age]);
@@ -431,7 +441,7 @@ function onChildInput(text, tStart){
   renderTurns();
   setPhase("thinking");
 
-  if(state.turn>=state.maxTurns){ return endStory(text, tStart); }
+  if(state.turn>=state.maxTurns){ return endStory(tStart); }
 
   generateScene("continue", text).then(scene=>{
     state.context.push({role:"buddy",text:scene});
@@ -440,16 +450,20 @@ function onChildInput(text, tStart){
   });
 }
 
-async function endStory(lastChoice, tStart){
-  const d=T();
-  const ending = d.ending[state.age] + " ";
-  const scene = ending + d.reflectQ;          // resolve happily + reflection question
+async function endStory(tStart){
+  setPhase("thinking");
+  let scene = await modelReply("final");      // judge last answer + happy ending + the learning question
+  if(scene){ state.context.push({role:"buddy",text:scene}); }
+  else { const d=T(); scene = d.ending[state.age] + " " + d.reflectQ; }   // deterministic fallback
   state.awaitingReflection=true;
   logLatency(tStart);
   speak(scene, startListening);
 }
 
-function handleReflection(answer){
+async function handleReflection(answer){
+  state.context.push({role:"child",text:answer});
+  const m = await modelReply("reflection");   // judge the learning answer, correct if wrong, give "AI Buddy Version"
+  if(m){ state.awaitingReflection=false; speak(m, ()=>{ setPhase("idle"); $("#status").textContent="🌟"; }); return; }
   const d=T();
   const praise = d.validate[Math.floor(Math.random()*d.validate.length)];
   // 2-sentence "AI Buddy Version" recap of the moral, in the locked language.

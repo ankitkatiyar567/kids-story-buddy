@@ -416,6 +416,7 @@ RULES:
 - After each short story paragraph, ask exactly ONE simple question whose answer is clear from what you just told.
 - When the child answers: react kindly FIRST — if right, praise warmly in one short sentence; if wrong, gently give the correct answer in one short sentence. Never scold.
 - Keep it wholesome: no violence, weapons, fear, sadness, or adult themes.
+- Speak ONLY as Foxy and begin directly with the story. Never add greetings to me, introductions, disclaimers, content notes, or filler like "Sure", "Of course", or "Here is a story".
 - Plain spoken text only: no markdown, no lists, no bracketed notes, no stage directions.`;
   const msgs = [{role:"system", content:sys}];
   // conversation must start user-first (the opening is an assistant turn) — add a kickoff
@@ -433,10 +434,21 @@ RULES:
   return msgs;
 }
 
+/* strip model preamble/disclaimers so it reads like Foxy talking straight to the kid */
+function cleanScene(t){
+  if(!t) return t;
+  t = t.replace(/\[[^\]]*\]/g," ").replace(/[*#`]+/g,"");                              // bracketed director leaks + markdown
+  t = t.replace(/^\s*(foxy|narrator|story|assistant|ai)\s*[:：\-–—]\s*/i,"");            // speaker label
+  t = t.replace(/^\s*(sure|okay|ok|alright|all right|great|certainly|absolutely|of course|wonderful|fantastic|yay|hey there)\s*[,!.:—–\-]+\s*/i,""); // leading filler interjection
+  t = t.replace(/^\s*(here(?:'s| is)[^.!?:]*|let'?s begin[^.!?:]*|let us begin[^.!?:]*|once you'?re ready[^.!?:]*)[:.!?]\s+/i,"");                       // lead-ins
+  try{ t = t.split(/(?<=[.!?])\s+/).filter(s=> !/\b(as an ai|i am an ai|language model|disclaimer|i cannot|i can'?t help|i'?m unable|note that|please note|content warning|trigger warning)\b/i.test(s)).join(" "); }catch(e){}
+  return t.replace(/^["'“”\s]+|["'“”\s]+$/g,"").trim();
+}
+
 async function modelReply(kind){
   if(!(state.modelReady && typeof window.ksbGenerate==="function")) return null;
   try{
-    const out = (await window.ksbGenerate(buildMessages(kind), kind==="opening"?1.05:0.85)).trim();
+    let out = cleanScene((await window.ksbGenerate(buildMessages(kind), kind==="opening"?1.05:0.85)).trim());
     if(out && !isUnsafe(out)) return out;              // output safety guard
   }catch(e){ console.warn("model reply failed, using local engine", e); }
   return null;

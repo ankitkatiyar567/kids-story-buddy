@@ -46,6 +46,8 @@
     .start:hover{transform:translateY(-3px)}
     .start:disabled{opacity:.45;cursor:not-allowed;transform:none}
     .note{margin-top:14px;font-size:.78rem;color:var(--muted)}
+    .modeltoggle{display:flex;align-items:flex-start;gap:10px;text-align:left;margin-top:22px;padding:14px;border-radius:16px;background:var(--card2);border:1px solid var(--bd);cursor:pointer;font-size:.84rem;line-height:1.4}
+    .modeltoggle input{margin-top:3px;width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent2)}
 
     /* story */
     .story{display:none;flex-direction:column;gap:16px;flex:1}
@@ -105,6 +107,7 @@
         <div class="opt" data-age="7-12"><span class="big">🚀</span>7–12<span class="sm" data-ui="ageB">Mystery &amp; thinking</span></div>
       </div>
 
+      <label class="modeltoggle"><input type="checkbox" id="useModel"><span data-ui="useModel">🧠 Use open AI model</span></label>
       <button class="start" id="startBtn" disabled data-ui="start">▶ Start the Adventure!</button>
       <div class="note" data-ui="micNote">🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!</div>
     </section>
@@ -138,7 +141,7 @@
    ========================================================================= */
 const STR = {
   en:{ code:"en-US", name:"English",
-    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:"},
+    ui:{title:"Kids Story Buddy",tagline:"Tell a story together — just with your voice!",pickLang:"1. Pick your language",pickAge:"2. How old are you?",ageA:"Listening & phonics",ageB:"Mystery & thinking",start:"▶ Start the Adventure!",micNote:"🎙️ We'll ask for microphone permission so you can talk to your buddy. You can also type!",send:"Send",restart:"↺ New adventure",locked:"Locked",speaking:"AI Buddy is speaking…",listening:"Listening… your turn!",thinking:"Thinking…",heardYou:"You said:",useModel:"🧠 Use open AI model (Llama&nbsp;3.2, runs in your browser · ~0.9&nbsp;GB first load · needs WebGPU)",modelLoading:"🧠 Waking up the story brain… ",modelReady:"🧠 Open AI model ready — stories are now AI-generated!",modelNoGpu:"🧠 No WebGPU here, so the built-in story engine is used (try Chrome/Edge desktop for the open model)."},
     redirect:"Oh, that path is closed today! Let's head back toward our adventure. What should we do next?",
     reflectQ:"The End! What did you learn from this adventure?",
     validate:["Wow, that is a fantastic point!","What a wonderful idea — well done!","I love how you thought about that!"],
@@ -155,7 +158,7 @@ const STR = {
              "7-12":"With the final clue in hand, the Whispering Woods grows calm and the blue light settles into a friendly glow. The mystery is solved. 🌌 " }
   },
   hi:{ code:"hi-IN", name:"हिन्दी",
-    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:"},
+    ui:{title:"बच्चों का कहानी दोस्त",tagline:"आओ मिलकर कहानी बनाएँ — सिर्फ़ अपनी आवाज़ से!",pickLang:"1. अपनी भाषा चुनो",pickAge:"2. तुम्हारी उम्र कितनी है?",ageA:"सुनना और ध्वनियाँ",ageB:"रहस्य और सोच",start:"▶ रोमांच शुरू करो!",micNote:"🎙️ हम माइक्रोफ़ोन की अनुमति माँगेंगे ताकि तुम अपने दोस्त से बात कर सको। तुम लिख भी सकते हो!",send:"भेजो",restart:"↺ नई कहानी",locked:"लॉक",speaking:"दोस्त बोल रहा है…",listening:"सुन रहा हूँ… तुम्हारी बारी!",thinking:"सोच रहा हूँ…",heardYou:"तुमने कहा:",useModel:"🧠 ओपन एआई मॉडल इस्तेमाल करें (Llama&nbsp;3.2, तुम्हारे ब्राउज़र में चलता है · ~0.9&nbsp;GB पहली बार · WebGPU ज़रूरी)",modelLoading:"🧠 कहानी का दिमाग जाग रहा है… ",modelReady:"🧠 ओपन एआई मॉडल तैयार — अब कहानियाँ एआई से बन रही हैं!",modelNoGpu:"🧠 यहाँ WebGPU नहीं है, इसलिए अंदरूनी कहानी इंजन इस्तेमाल हो रहा है (ओपन मॉडल के लिए Chrome/Edge डेस्कटॉप आज़माएँ)।"},
     redirect:"अरे! हम उस रास्ते पर नहीं जा सकते। चलो वापस अपनी कहानी पर चलते हैं। अब आगे क्या करें?",
     reflectQ:"कहानी समाप्त! इस कहानी से आपने क्या सीखा?",
     validate:["वाह, यह तो बहुत बढ़िया बात है!","कितना सुंदर विचार — शाबाश!","मुझे तुम्हारी सोच बहुत पसंद आई!"],
@@ -172,7 +175,7 @@ const STR = {
              "7-12":"आखिरी सुराग हाथ में लेकर, फुसफुसाता जंगल शांत हो जाता है और नीली रोशनी एक दोस्ताना चमक में बदल जाती है। रहस्य सुलझ गया। 🌌 " }
   },
   fi:{ code:"fi-FI", name:"Suomi",
-    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:"},
+    ui:{title:"Lasten tarinakaveri",tagline:"Kerrotaan tarina yhdessä — pelkällä äänellä!",pickLang:"1. Valitse kielesi",pickAge:"2. Minkä ikäinen olet?",ageA:"Kuuntelu & äänteet",ageB:"Mysteeri & ajattelu",start:"▶ Aloita seikkailu!",micNote:"🎙️ Pyydämme mikrofonilupaa, jotta voit puhua kaverillesi. Voit myös kirjoittaa!",send:"Lähetä",restart:"↺ Uusi seikkailu",locked:"Lukittu",speaking:"Tarinakaveri puhuu…",listening:"Kuuntelen… sinun vuorosi!",thinking:"Mietin…",heardYou:"Sanoit:",useModel:"🧠 Käytä avointa tekoälymallia (Llama&nbsp;3.2, toimii selaimessasi · ~0.9&nbsp;GB ensilataus · vaatii WebGPU:n)",modelLoading:"🧠 Herätellään tarina-aivoja… ",modelReady:"🧠 Avoin tekoälymalli valmis — tarinat luodaan nyt tekoälyllä!",modelNoGpu:"🧠 Ei WebGPU:ta täällä, joten käytetään sisäänrakennettua tarinamoottoria (kokeile Chrome/Edge-työpöytää avoimeen malliin)."},
     redirect:"Hups, se polku onkin suljettu! Palataanpa takaisin seikkailuun. Mitä tehdään seuraavaksi?",
     reflectQ:"Sen pituinen se! Mitä opit tästä seikkailusta?",
     validate:["Vau, sepä oli mahtava oivallus!","Mikä ihana idea — hienoa työtä!","Pidän kovasti siitä, miten ajattelit tuon!"],
@@ -198,7 +201,7 @@ const BANNED = {
 };
 
 /* ============================ STATE ============================ */
-const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null };
+const state = { lang:null, age:null, phase:"idle", turn:0, maxTurns:3, started:false, reflecting:false, awaitingReflection:false, voices:[], recog:null, useModel:false, modelReady:false };
 
 const $ = s => document.querySelector(s);
 const T = () => STR[state.lang];
@@ -294,9 +297,34 @@ function isUnsafe(text){
    and returns { text }.  Everything else (interlock, safety, reflection)
    stays the same.
 ==================================================================== */
+function buildMessages(kind, choice){
+  const langName = STR[state.lang].name;
+  const ageGuide = state.age==="3-6"
+    ? "The child is 3-6 years old. Use very short, simple sentences and easy words. Keep it gentle, warm and happy. Never include anything scary, sad, violent, or complex."
+    : "The child is 7-12 years old. Use richer vocabulary, light mystery and problem-solving, but keep it age-appropriate and never scary or violent.";
+  const sys = `You are Foxy, a friendly storytelling buddy for children guiding a spoken "choose your own adventure".
+RULES:
+- Respond ONLY in ${langName}. Never use another language and never translate.
+- ${ageGuide}
+- Keep each reply to 1-3 short sentences, then ask the child what they want to do next.
+- Absolutely no violence, weapons, blood, death, romance or adult themes. Stay wholesome.
+- Plain spoken story text only: no markdown, headings, lists, or stage directions.`;
+  const msgs = [{role:"system", content:sys}];
+  if(kind==="opening"){ msgs.push({role:"user", content:"Begin a brand-new, imaginative adventure in one or two sentences, then ask me what to do first."}); }
+  else { state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text})); }
+  return msgs;
+}
+
 async function generateScene(kind, choice){
-  // await fetch("/api/story",{method:"POST",body:JSON.stringify({lang:state.lang,age:state.age,turn:state.turn,context:state.context,choice})})...
-  await new Promise(r=>setTimeout(r, 250));         // simulate latency (well under 2s)
+  // OPEN MODEL PATH: Llama-3.2-1B running in-browser via WebLLM/WebGPU (see module script).
+  if(state.modelReady && typeof window.ksbGenerate==="function"){
+    try{
+      const out = (await window.ksbGenerate(buildMessages(kind, choice))).trim();
+      if(out && !isUnsafe(out)) return out;            // output safety guard
+    }catch(e){ console.warn("model gen failed, using local engine", e); }
+  }
+  // LOCAL FALLBACK (templated engine): no WebGPU / model off / load failed.
+  await new Promise(r=>setTimeout(r, 200));
   const d = T();
   if(kind==="opening") return d.opening[state.age];
   const pool = d.cont[state.age];
@@ -310,15 +338,27 @@ function renderTurns(){
   for(let i=0;i<state.maxTurns;i++){ const p=document.createElement("div"); p.className="pip"+(i<state.turn?" on":""); tb.appendChild(p); }
 }
 
+function bootstrapModel(){
+  if(!state.useModel) return;
+  const b=$("#fallbackBanner"); b.style.display="block";
+  if(!window.ksbHasWebGPU || typeof window.ksbLoadModel!=="function"){ b.textContent=T().ui.modelNoGpu; return; }
+  b.textContent=T().ui.modelLoading+"0%";
+  window.ksbLoadModel(p=>{ const pct=Math.round(((p&&p.progress!=null)?p.progress:0)*100); b.textContent=T().ui.modelLoading+pct+"%"; })
+    .then(()=>{ state.modelReady=true; b.textContent=T().ui.modelReady; setTimeout(()=>{ b.style.display="none"; },5000); })
+    .catch(e=>{ console.warn("model load failed",e); b.textContent=T().ui.modelNoGpu; });
+}
+
 async function startAdventure(){
   // user-gesture audio unlock
   if(window.speechSynthesis){ window.speechSynthesis.cancel(); window.speechSynthesis.getVoices(); }
+  state.useModel = $("#useModel").checked;
   state.recog = buildRecognizer();
   if(!state.recog){ $("#fallbackBanner").style.display="block"; $("#fallbackBanner").textContent="ℹ️ Voice input isn't supported in this browser — you can type your answers. (A production build would use a cloud Speech-to-Text fallback.)"; }
   state.context=[]; state.turn=0; state.started=true; state.awaitingReflection=false;
   $("#setup").style.display="none"; $("#story").style.display="flex";
   $("#lock").style.display="flex"; $("#lockLang").textContent=STR[state.lang].name; $("#lockAge").textContent=state.age;
   renderTurns();
+  bootstrapModel();                 // load open model in background (if toggled); opening uses local engine for instant start
   setPhase("thinking");
   const opening = await generateScene("opening");
   state.context.push({role:"buddy",text:opening});
@@ -390,6 +430,26 @@ $("#sendBtn").addEventListener("click", ()=>{ const v=$("#txt").value; if(v.trim
 $("#txt").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=$("#txt").value; if(v.trim()) onChildInput(v, performance.now()); }});
 $("#restartBtn").addEventListener("click", ()=>{ if(window.speechSynthesis)window.speechSynthesis.cancel(); stopListening(); location.reload(); });
 if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(state.lang) pickVoice(); };
+</script>
+
+<!-- Open model: Llama-3.2-1B-Instruct runs fully in the browser via WebLLM + WebGPU (no server, no API key). -->
+<script type="module">
+  import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+  let engine = null, loading = null;
+  window.ksbHasWebGPU = !!(navigator.gpu);
+  window.ksbLoadModel = function(onProgress){
+    if(engine) return Promise.resolve(true);
+    if(loading) return loading;
+    loading = CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC",
+      { initProgressCallback: p => { try{ onProgress && onProgress(p); }catch(e){} } })
+      .then(e => { engine = e; return true; });
+    return loading;
+  };
+  window.ksbGenerate = async function(messages){
+    if(!engine) throw new Error("model not loaded");
+    const r = await engine.chat.completions.create({ messages, temperature:0.85, max_tokens:180 });
+    return (r.choices && r.choices[0] && r.choices[0].message.content) || "";
+  };
 </script>
 </body>
 </html>

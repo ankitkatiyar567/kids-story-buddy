@@ -361,8 +361,9 @@ function stopListening(){ if(state.recog){ try{ state.recog.abort(); }catch(e){}
 
 /* ============================ SAFETY ============================ */
 function isUnsafe(text){
-  const t = " "+text.toLowerCase()+" ";
-  return BANNED[state.lang].some(w=> t.includes(w.toLowerCase()));
+  // whole-word / phrase match (space-delimited) so "hello" never trips "hell", etc.
+  const t = " " + text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu," ").replace(/\s+/g," ").trim() + " ";
+  return BANNED[state.lang].some(w=> t.includes(" "+w.toLowerCase()+" "));
 }
 
 /* ===================== STORY ENGINE (LLM SEAM) =====================
@@ -390,6 +391,8 @@ RULES:
 - Keep it wholesome: no violence, weapons, fear, sadness, or adult themes.
 - Plain spoken text only: no markdown, no lists, no bracketed notes, no stage directions.`;
   const msgs = [{role:"system", content:sys}];
+  // conversation must start user-first (the opening is an assistant turn) — add a kickoff
+  if(kind!=="opening") msgs.push({role:"user", content:"Let's begin our story. Tell it bit by bit and ask me a question after each part."});
   state.context.forEach(m=> msgs.push({role: m.role==="child"?"user":"assistant", content:m.text}));
   let dir="";
   if(kind==="opening")        dir = sd.theme
@@ -428,14 +431,23 @@ function renderTurns(){
   for(let i=0;i<state.maxTurns;i++){ const p=document.createElement("div"); p.className="pip"+(i<state.turn?" on":""); tb.appendChild(p); }
 }
 
-function bootstrapModel(){
+async function bootstrapModel(){
   if(!state.useModel) return;
   const b=$("#fallbackBanner"); b.style.display="block";
   if(!window.ksbHasWebGPU || typeof window.ksbLoadModel!=="function"){ b.textContent=T().ui.modelNoGpu; return; }
+  const prog = p=>{ const pct=Math.round(((p&&p.progress!=null)?p.progress:0)*100); b.textContent=T().ui.modelLoading+pct+"%"; };
+  const ok = ()=>{ state.modelReady=true; b.textContent=T().ui.modelReady; setTimeout(()=>{ b.style.display="none"; },5000); };
   b.textContent=T().ui.modelLoading+"0%";
-  window.ksbLoadModel(p=>{ const pct=Math.round(((p&&p.progress!=null)?p.progress:0)*100); b.textContent=T().ui.modelLoading+pct+"%"; })
-    .then(()=>{ state.modelReady=true; b.textContent=T().ui.modelReady; setTimeout(()=>{ b.style.display="none"; },5000); })
-    .catch(e=>{ console.warn("model load failed",e); b.textContent=T().ui.modelNoGpu; });
+  try{ await window.ksbLoadModel(prog); ok(); }
+  catch(e){
+    console.warn("model load failed",e);
+    if((window.ksbModelId||"").indexOf("1B")<0){           // too heavy for this device → retry the Fast model once
+      b.textContent="🧠 That model was too big for this device — loading the Fast model instead…";
+      window.ksbModelId="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+      try{ await window.ksbLoadModel(prog); ok(); }
+      catch(e2){ console.warn(e2); b.textContent="🧠 Couldn't load the AI model on this device — using the built-in story engine. Try Chrome/Edge on desktop."; }
+    } else { b.textContent="🧠 Couldn't load the AI model on this device — using the built-in story engine. Try Chrome/Edge on desktop."; }
+  }
 }
 
 async function startAdventure(){
@@ -453,7 +465,11 @@ async function startAdventure(){
   $("#setup").style.display="none"; $("#story").style.display="flex";
   $("#lock").style.display="flex"; $("#lockLang").textContent=STR[state.lang].name; $("#lockAge").textContent=state.age;
   renderTurns();
-  bootstrapModel();                 // load open model in background (if toggled); opening uses local engine for instant start
+  if(state.useModel){               // wait for the brain to be up, THEN start the story (opening is model-generated too)
+    setPhase("thinking");
+    $("#scene").textContent = "🦊 " + T().ui.modelLoading.trim();
+    await bootstrapModel();
+  }
   setPhase("thinking");
   const opening = await generateScene("opening");
   state.context.push({role:"buddy",text:opening});
@@ -542,7 +558,8 @@ if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged = ()=>{ if(sta
     const mid = window.ksbModelId || "Llama-3.2-3B-Instruct-q4f16_1-MLC";
     loading = CreateMLCEngine(mid,
       { initProgressCallback: p => { try{ onProgress && onProgress(p); }catch(e){} } })
-      .then(e => { engine = e; return true; });
+      .then(e => { engine = e; return true; })
+      .catch(err => { loading = null; throw err; });   // reset so a retry with a smaller model can run
     return loading;
   };
   window.ksbGenerate = async function(messages, temp){
